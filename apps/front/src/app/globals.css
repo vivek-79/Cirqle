@@ -1,0 +1,44 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+*{
+  box-sizing: border-box;
+}
+html,body{
+  padding: 0;
+  width: 100%;
+  height:100dvh;
+  background-color: black;
+  color: white;
+}
+
+@layer utilities{
+
+  .hover-white{
+    @apply transition-colors duration-300 hover:text-white
+  }
+  .hover-black{
+    @apply transition-colors duration-300 hover:text-gray-600
+  }
+  .absolute-center{
+    @apply top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2
+  }
+  .line{
+    @apply border-gray-800 
+  }
+
+  .modal{
+    @apply fixed top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2
+  }
+}
+
+@font-face{
+  font-family: 'AtlassianSans';
+  src: url('/fonts/AtlassianSans-latin.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+}
+
+.font-insta {
+  font-family: 'AtlassianSans', sans-serif;
+}

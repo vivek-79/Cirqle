@@ -1,0 +1,98 @@
+
+import { WebSocketContext } from '@/context/WebSockectComp';
+import { useContext, useRef, useState } from 'react'
+import { CiFaceSmile } from "react-icons/ci";
+import { CiImageOn } from "react-icons/ci";
+import { CiHeart } from "react-icons/ci";
+import { IoIosSend } from "react-icons/io";
+
+
+const MessageInput = ({ chatId, userId }: { chatId: string, userId :number}) => {
+
+    const socket = useContext(WebSocketContext)
+    const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+    const [sendButtonVisible, setSendButtonVisible] = useState<boolean>(false)
+
+    const handleInput = () => {
+        const textarea = textareaRef.current;
+        if (textarea) {
+            textarea.style.height = 'auto'; // Reset height
+            textarea.style.height = `${textarea.scrollHeight}px`; // Set to content height
+        }
+        if (textarea?.value && textarea.value.trim().length > 0) {
+            setSendButtonVisible(true)
+        }
+        else {
+            setSendButtonVisible(false)
+        }
+    };
+
+
+    const handleSendMessage = () => {
+
+        if(!socket) return;
+
+        if (!textareaRef.current?.value) return;
+
+        const value = textareaRef.current?.value
+
+        socket.emit("sendMessage", {
+            text: value,
+            chatId:chatId,
+            senderId:userId
+        });
+
+        textareaRef.current.value = ""; // Clear the input
+        handleInput();
+    }
+    return (
+        <div className='absolute bottom-11 md:bottom-0 pr-6 pl-2 h-20 w-full flex items-end justify-center pb-4'>
+            <div className='w-full flex flex-row items-end justify-between border-1 border-gray-600 rounded-3xl px-2 py-2 gap-1'>
+                <CiFaceSmile size={30} />
+                <textarea
+                    name="message"
+                    ref={textareaRef}
+                    onInput={handleInput}
+                    rows={1}
+                    autoCorrect="on"
+                    spellCheck={false}
+                    id="message"
+                    placeholder='Message...'
+                    autoCapitalize='sentences'
+                    className='overflow-y-auto [scrollbar-width:none] bg-transparent resize-none focus:outline-none flex-1'
+                    style={{ maxHeight: "100px" }}
+                />
+
+                {sendButtonVisible ? (
+
+                    <button
+                        title='Send message'
+                        onClick={handleSendMessage}
+                        className='text-blue-400 cursor-pointer hover-black'
+                    >
+                        <IoIosSend size={30} />
+                    </button>
+                ) : (
+                    <>
+                        <button
+                            title='Send photo'
+                            className='cursor-pointer'
+                        >
+                            <CiImageOn size={30}/>
+                        </button>
+                        <button
+                            title='Send like'
+                            className='cursor-pointer'
+                        >
+                            <CiHeart size={30}/>
+                        </button>
+                        
+                    </>
+                )}
+
+            </div>
+        </div>
+    )
+}
+
+export default MessageInput
