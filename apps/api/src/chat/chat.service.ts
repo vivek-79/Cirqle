@@ -100,9 +100,7 @@ export class ChatService {
                     id: chatId
                 },
                 select: {
-                    name: true,
-                    groupAvatar: true,
-                    isGroup: true,
+                    id:true,
                     members: {
                         select: {
                             name: true,
@@ -118,17 +116,23 @@ export class ChatService {
                             createdAt: true,
                             updatedAt: true,
                             seenBy: true,
-                            senderId: true
+                            sender:{
+                                select:{
+                                    name:true,
+                                    id:true,
+                                    avatar:true
+                                }
+                            }
+                        },
+                        take: 20,
+                        orderBy: {
+                            createdAt: "desc"
                         }
                     }
-                }
+                },
             })
-
-            const modifiedChatDetail = {
-                ...chatDetail,
-                members: chatDetail?.members.filter(member => member.id !== userId)
-            }
-            return modifiedChatDetail;
+            
+            return chatDetail;
         } catch (error) {
 
             throw new InternalServerErrorException("Server error")

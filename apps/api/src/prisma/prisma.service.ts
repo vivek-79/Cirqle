@@ -6,11 +6,11 @@ import { PrismaClient } from '@repo/db'
 export class PrismaService extends PrismaClient implements OnModuleInit,OnModuleDestroy {
     async onModuleInit() {
         this.$connect()
-        console.log("connected")
+        console.log("Prisma connected")
     }
 
     async onModuleDestroy() {
         this.$disconnect()
-        console.log("disconnected")
+        console.log("Prisma disconnected")
     }
 }

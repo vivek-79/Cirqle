@@ -1,4 +1,5 @@
 "use client"
+import ChatBox from '@/components/chat/ChatBox';
 import ChatBoxHeader from '@/components/chat/ChatBoxHeader';
 import MessageInput from '@/components/chat/MessageInput';
 import { AccessToken, api } from '@/constants';
@@ -11,7 +12,7 @@ import { useEffect, useState } from 'react'
 import { toast } from 'sonner';
 
 
-const ChatBox = () => {
+const ChatComp = () => {
 
     const [chatDetails, setChatDetails] = useState<ChatDetails>()
     const user = useStoredUser();
@@ -43,17 +44,19 @@ const ChatBox = () => {
 
     if(!chatDetails) return null;
     return (
-       <WebSocketProvider>
-            <div className='relative w-full h-full px-2 '>
+  
+            <div className='relative w-full h-dvh flex flex-col px-2 overflow-hidden pb-10'>
                 {/* Messaging Tool Bar */}
-                <MessageInput chatId={chatId} userId={user.id}/>
                 <ChatBoxHeader
                     name={chatDetails.isGroup ? chatDetails.name : chatDetails.members[0].name}
                     avatar={chatDetails.isGroup ? chatDetails.groupAvatar : chatDetails.members[0].avatar}
                 />
+
+
+                <ChatBox chatId={chatId} userId={user.id} accessToken={user.accessToken} />
+                <MessageInput chatId={chatId} userId={user.id}/>
             </div>
-       </WebSocketProvider>
     )
 }
 
-export default ChatBox
+export default ChatComp

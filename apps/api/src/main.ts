@@ -2,7 +2,6 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import * as cookieParser from 'cookie-parser';
-import { IO_REDIS } from './lib/redisIo';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -14,7 +13,6 @@ async function bootstrap() {
     credentials: true
   })
 
-  await IO_REDIS.connect();
   await app.listen(process.env.PORT ?? 4000);
 }
 bootstrap();

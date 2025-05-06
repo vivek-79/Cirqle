@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "module": "NodeNext", // or "ESNext" to support ESM
+    "moduleResolution": "NodeNext", // Ensures compatibility with Node.js ESM
+    "target": "ES2020", // or "ESNext", "ES2022"
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "rootDir":"./src",
+    "outDir":"./dist",
+    "declaration": true, // ✅ This generates .d.ts files
+    "emitDeclarationOnly": false, // optional; keep false to emit .js + .d.ts
+    "forceConsistentCasingInFileNames": true,
+    "lib": [
+      "ES2020"
+    ] 
+  }
+}

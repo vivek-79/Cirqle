@@ -15,7 +15,29 @@ export class CREATE_CHAT{
 }
 
 export class SEND_MESSAGE{
-    text!:string;
-    chatId!:string;
-    senderId!:number
+    text?:string | null;
+    photo?:string | null;
+    chatId:string;
+    senderId:number
+}
+
+export class CHAT_MEMBERS{
+    id:number
+    name:string
+    avatar?:string | null
+}
+export class PROCESSED_MESSAGE{
+    id:string
+    members:CHAT_MEMBERS[]
+
+    message:{
+
+        text?:string | null
+        photo?:string | null
+        createdAt:string
+        updatedAt:string
+        id:string
+        seenBy:CHAT_MEMBERS[]
+        sender: CHAT_MEMBERS
+    }
 }

@@ -17,9 +17,15 @@ const WebSocketProvider = ({children}:{children:ReactNode}) => {
 
   useEffect(()=>{
 
-    if(!user || !user.accessToken || socket?.active){
+    console.log("WebSocketProvider effect ran");
+    if(!user || !user.accessToken){
       return 
     };
+
+    if (socket) {
+      console.log("Socket already exists, skipping...");
+      return;
+    }
 
     const socketInstance:Socket<ServerToClientEvents, ClientToServerEvents> = io('http://localhost:8081',{
       withCredentials:true,
@@ -29,11 +35,13 @@ const WebSocketProvider = ({children}:{children:ReactNode}) => {
     })
 
     socketInstance.on("connect", () => {
-      console.log("WebSocket connected ✅", socketInstance.id);
+      console.log("WebSocket connected ✅", socketInstance.id, typeof socketInstance.id);
     });
+  
     socketInstance.on("connect_error", (err) => {
       console.error("WebSocket connection error ❌", err.message);
     });
+    
     setSocket(socketInstance)
 
     return ()=> {
@@ -42,7 +50,6 @@ const WebSocketProvider = ({children}:{children:ReactNode}) => {
     }
   },[user])
 
-  if(!socket) return null;
   return (
     <WebSocketContext.Provider value={socket}>
         {children}

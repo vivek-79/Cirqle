@@ -1,6 +1,6 @@
 
 import { WebSocketContext } from '@/context/WebSockectComp';
-import { useContext, useRef, useState } from 'react'
+import { useCallback, useContext, useRef, useState } from 'react'
 import { CiFaceSmile } from "react-icons/ci";
 import { CiImageOn } from "react-icons/ci";
 import { CiHeart } from "react-icons/ci";
@@ -28,26 +28,25 @@ const MessageInput = ({ chatId, userId }: { chatId: string, userId :number}) => 
     };
 
 
-    const handleSendMessage = () => {
+    const handleSendMessage = useCallback(() => {
+        if (!socket || !textareaRef.current?.value) return;
 
-        if(!socket) return;
-
-        if (!textareaRef.current?.value) return;
-
-        const value = textareaRef.current?.value
+        const value = textareaRef.current.value;
 
         socket.emit("sendMessage", {
             text: value,
-            chatId:chatId,
-            senderId:userId
+            chatId,
+            senderId: userId,
         });
 
-        textareaRef.current.value = ""; // Clear the input
+        console.log("sent")
+        textareaRef.current.value = "";
         handleInput();
-    }
+    }, [socket, chatId, userId]);
+
     return (
-        <div className='absolute bottom-11 md:bottom-0 pr-6 pl-2 h-20 w-full flex items-end justify-center pb-4'>
-            <div className='w-full flex flex-row items-end justify-between border-1 border-gray-600 rounded-3xl px-2 py-2 gap-1'>
+        <div className=' md:bottom-0 pr-6 pl-2 h-20 w-full flex items-end justify-center pb-4 bg-black'>
+            <div className='w-full flex flex-row items-end justify-between border-1 border-gray-600 rounded-3xl px-2 py-2 gap-1 '>
                 <CiFaceSmile size={30} />
                 <textarea
                     name="message"

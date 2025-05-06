@@ -27,8 +27,8 @@ export class Authservice {
         const accessTokenSecret = this.config.get("ACCESS_TOKEN_SECRET")
         const refreshTokenSecret = this.config.get("REFRESH_TOKEN_SECRET")
 
-        const accessToken = sign({ email: user.email }, accessTokenSecret, { expiresIn: this.config.get("ACCESS_TOKEN_EXPIRY")})
-        const refreshToken = sign({ email: user.email }, refreshTokenSecret, { expiresIn: this.config.get("REFRESH_TOKEN_EXPIRY") })
+        const accessToken = sign({ email: user.email,id:user.id }, accessTokenSecret, { expiresIn: this.config.get("ACCESS_TOKEN_EXPIRY")})
+        const refreshToken = sign({ email: user.email,id:user.id }, refreshTokenSecret, { expiresIn: this.config.get("REFRESH_TOKEN_EXPIRY") })
 
         return {
             accessToken, refreshToken
@@ -57,7 +57,6 @@ export class Authservice {
 
     async logIn(userLogin: UserLogin, res: Response) {
 
-        console.log(userLogin)
         const user = await this.prisma.user.findFirst({where:{email:userLogin.email}});
 
         if(!user){

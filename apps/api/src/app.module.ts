@@ -10,6 +10,7 @@ import { GateWayModule } from './chat/chat.gateway.module';
 import { FriendModule } from './friend/friend.module';
 import { NotificationModule } from './notification/notification.module';
 import { MessagesModule } from './messages/messages.module';
+import { RedisSubscriberModule } from './redis-subscriber/redis-subscriber.module';
 
 @Module({
   imports: [
@@ -21,7 +22,8 @@ import { MessagesModule } from './messages/messages.module';
     GateWayModule,
     FriendModule,
     NotificationModule,
-    MessagesModule
+    MessagesModule,
+    RedisSubscriberModule
   ],
   controllers: [AppController],
   providers: [AppService],
