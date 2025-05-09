@@ -92,7 +92,7 @@ export class ChatService {
         }
     }
 
-    async getChatDetails({ chatId, userId }: { chatId: string, userId: number }) {
+    async getChatDetails({ chatId }: { chatId: string,}) {
 
         try {
             const chatDetail = await this.prisma.chat.findFirst({

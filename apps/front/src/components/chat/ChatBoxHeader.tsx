@@ -12,7 +12,7 @@ type Props = {
 
 const ChatBoxHeader = ({avatar,isOnline,lastOnline,name}: Props) => {
   return (
-      <div className=' px-4 h-16 w-full flex items-center justify-center border-b-1 line z-50 bg-black'>
+      <div className=' px-4 min-h-16 w-full flex items-center justify-center border-b-1 line z-50 bg-black'>
         <div className='h-full w-full flex flex-row items-center justify-between '>
             <button className='w-full flex flex-row items-center gap-2'>
                   <Image

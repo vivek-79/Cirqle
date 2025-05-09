@@ -45,7 +45,7 @@ const MessageInput = ({ chatId, userId }: { chatId: string, userId :number}) => 
     }, [socket, chatId, userId]);
 
     return (
-        <div className=' md:bottom-0 pr-6 pl-2 h-20 w-full flex items-end justify-center pb-4 bg-black'>
+        <div className='absolute bottom-11 md:bottom-0 px-4 w-full min-h-17 md:min-h-19 flex pb-2 md:pb-4 items-end justify-center border-b-1 line z-50 bg-black'>
             <div className='w-full flex flex-row items-end justify-between border-1 border-gray-600 rounded-3xl px-2 py-2 gap-1 '>
                 <CiFaceSmile size={30} />
                 <textarea

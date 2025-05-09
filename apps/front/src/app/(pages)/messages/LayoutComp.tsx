@@ -76,7 +76,7 @@ const LayoutComp = ({ children }: { children: ReactNode }) => {
                 </div>
                 {chatList.length > 0 && (
 
-                    <div className='flex flex-col w-full'>
+                    <div className='flex flex-col'>
                         {chatList.map((chat) => (
 
                             // Stting chat id on Click
@@ -108,7 +108,7 @@ const LayoutComp = ({ children }: { children: ReactNode }) => {
             </div>
 
             {/* Chat box */}
-            <div className='w-full h-full'>
+            <div className='flex-1 overflow-x-hidden '>
                 {children}
             </div>
         </section>

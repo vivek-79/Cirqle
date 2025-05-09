@@ -22,7 +22,14 @@ export const getRedis = async (): Promise<RedisClientType> => {
             password: REDIS_PASSWORD,
             socket: {
                 host: REDIS_HOST,
-                port: REDIS_PORT
+                port: REDIS_PORT,
+                reconnectStrategy: (retries) => {
+                    if (retries > 5) {
+                        console.error('Too many Redis reconnection attempts.');
+                        return new Error('Redis reconnect failed');
+                    }
+                    return Math.min(retries * 100, 2000); // exponential backoff
+                },
             }
         }
         )

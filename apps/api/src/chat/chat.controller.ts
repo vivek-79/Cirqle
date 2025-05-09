@@ -14,8 +14,9 @@ export class ChatController {
 
     //getting each chat details
     @Get('/details/:id')
-    getChatDetails(@Param('id') chatId: string, @Query('id', ParseIntPipe) userId: number) {
-        return this.chatService.getChatDetails({ chatId, userId });
+    getChatDetails(@Param('id') chatId: string) {
+
+        return this.chatService.getChatDetails({ chatId });
     }
 
     //Adding a mew chat

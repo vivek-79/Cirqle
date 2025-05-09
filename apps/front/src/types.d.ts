@@ -1,5 +1,6 @@
 
 import { IconType } from "react-icons";
+import { CHAT_MEMBERS, MESSAGE, PROCESSED_MESSAGE } from "./components/chat/ChatBox";
 
 
 export type SideNav ={
@@ -54,12 +55,18 @@ export type ChatDetails={
     message:[]
 }
 
+export type EACH_PROCESSED_MESSAGE = {
+    id: string
+    members: CHAT_MEMBERS[]
+
+    messages:MESSAGE
+}
 export interface ClientToServerEvents {
     sendMessage: (data: { text: string, chatId: string, senderId:number }) => void;
     // add more if needed
 }
 
 export interface ServerToClientEvents {
-    message: (data: { message: string }) => void;
+    message: (data: EACH_PROCESSED_MESSAGE) => void;
     // add more if needed
 }

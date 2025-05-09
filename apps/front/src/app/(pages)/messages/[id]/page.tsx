@@ -24,38 +24,38 @@ const ChatComp = () => {
     }
 
     //fetching chat details and previous messages
-    useEffect(()=>{
+    useEffect(() => {
 
         try {
-            (async()=>{
-                const res =await axios.get(`${api}/chat/details/${chatId}`,{
+            (async () => {
+                const res = await axios.get(`${api}/chat/details/${chatId}`, {
                     params: { id: user.id },
-                    withCredentials:true,
-                    headers:AccessToken(user.accessToken)
+                    withCredentials: true,
+                    headers: AccessToken(user.accessToken)
                 })
-    
+
                 setChatDetails(res.data)
             })()
         } catch (error) {
-            
+
             toast.error("Error getting chat details")
         }
-    },[chatId?.slice(0,8)])
+    }, [chatId?.slice(0, 8)])
 
-    if(!chatDetails) return null;
+    if (!chatDetails) return null;
     return (
-  
-            <div className='relative w-full h-dvh flex flex-col px-2 overflow-hidden pb-10'>
-                {/* Messaging Tool Bar */}
-                <ChatBoxHeader
-                    name={chatDetails.isGroup ? chatDetails.name : chatDetails.members[0].name}
-                    avatar={chatDetails.isGroup ? chatDetails.groupAvatar : chatDetails.members[0].avatar}
-                />
+
+        <div className='relative w-full h-dvh flex flex-col overflow-hidden pb-10'>
+            {/* Messaging Tool Bar */}
+            <ChatBoxHeader
+                name={chatDetails.isGroup ? chatDetails.name : chatDetails.members[1].name}
+                avatar={chatDetails.isGroup ? chatDetails.groupAvatar : chatDetails.members[1].avatar}
+            />
 
 
-                <ChatBox chatId={chatId} userId={user.id} accessToken={user.accessToken} />
-                <MessageInput chatId={chatId} userId={user.id}/>
-            </div>
+            <ChatBox chatId={chatId} userId={user.id} accessToken={user.accessToken} />
+            <MessageInput chatId={chatId} userId={user.id} />
+        </div>
     )
 }
 

@@ -30,7 +30,7 @@ export class PROCESSED_MESSAGE{
     id:string
     members:CHAT_MEMBERS[]
 
-    message:{
+    messages:{
 
         text?:string | null
         photo?:string | null

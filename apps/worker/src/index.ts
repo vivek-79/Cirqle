@@ -65,7 +65,7 @@ type MESSAGE_DTO = {
             const modifiedData = {
                 id: res.chatId,
                 members: res.chat.members,
-                message: {
+                messages: {
                     id: res.id,
                     text: res.text,
                     photo: res.photo,
