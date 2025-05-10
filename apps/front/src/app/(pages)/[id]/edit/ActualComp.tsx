@@ -9,7 +9,7 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import { useDispatch } from 'react-redux';
 import { login } from '@/store/auth.slice';
-import { CloudImage } from '@/app/helpers/getFullImageUrl';
+import { CloudImage } from '@/helpers/getFullImageUrl';
 import { UserProfile, UserUpdate } from '@/types';
 import Suggestions from '@/components/Suggestions';
 
@@ -18,11 +18,11 @@ const ActualComp = () => {
 
     const [avatarUpdateLoading, setAvatarUpdateLoading] = useState<boolean>(false);
     const [updateLoading, setUpdateLoading] = useState<boolean>(false);
-    const [user,setUser] = useState<UserProfile>()
+    const [user, setUser] = useState<UserProfile>()
     const dispatch = useDispatch();
     const storedUser = useStoredUser();
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const { register, handleSubmit ,setValue} = useForm({
+    const { register, handleSubmit, setValue } = useForm({
         defaultValues: {
             bio: "",
             gender: "",
@@ -32,28 +32,28 @@ const ActualComp = () => {
 
 
     //getting user profile
-    useEffect(()=>{
+    useEffect(() => {
 
-        if(!storedUser) return;
+        if (!storedUser) return;
         try {
-            (async()=>{
-                const res = await axios.get(`${api}/user/${storedUser?.id}`,{
-                    headers:AccessToken(storedUser.accessToken)
+            (async () => {
+                const res = await axios.get(`${api}/user/${storedUser?.id}`, {
+                    headers: AccessToken(storedUser.accessToken)
                 })
-    
+
                 setUser(res.data);
-                setValue("bio",res?.data?.bio)
+                setValue("bio", res?.data?.bio)
                 setValue("gender", res?.data?.gender)
                 setShowSuggestion(res?.data?.suggestions)
             })()
         } catch (error) {
             toast.error("Error while getting profile")
         }
-    },[storedUser])
+    }, [storedUser])
 
     const [showSugesstions, setShowSuggestion] = useState<boolean>(user?.suggestions || true);
 
-   
+
     //Avatar update
     const Upload = async (file: File) => {
 
@@ -67,9 +67,9 @@ const ActualComp = () => {
 
         const formData = new FormData();
         formData.append('new_avatar', file);
-        
-        if(storedUser.avatar){
-            formData.append('avatar',storedUser.avatar)
+
+        if (storedUser.avatar) {
+            formData.append('avatar', storedUser.avatar)
         }
         try {
             const res = await axios.put(`${api}/user/${storedUser.id}`, formData, {
@@ -88,9 +88,9 @@ const ActualComp = () => {
             dispatch(login(res.data.user))
 
             // resetting input field
-            if(fileInputRef.current){
+            if (fileInputRef.current) {
 
-                fileInputRef.current.value="";
+                fileInputRef.current.value = "";
             }
         } catch (error) {
 
@@ -103,26 +103,26 @@ const ActualComp = () => {
 
     //Other info updates
 
-    const onSubmit = async(data:UserUpdate)=>{
+    const onSubmit = async (data: UserUpdate) => {
 
-        if(
-            user?.bio=== data.bio &&
+        if (
+            user?.bio === data.bio &&
             user?.gender === data.gender &&
             user?.suggestions === showSugesstions
-        ){
+        ) {
             return;
         }
         setUpdateLoading(true)
-        data.suggestions =showSugesstions;
+        data.suggestions = showSugesstions;
 
         try {
-            await axios.put(`${api}/user/${storedUser.id}`,data,{
-                headers:AccessToken(storedUser.accessToken)
+            await axios.put(`${api}/user/${storedUser.id}`, data, {
+                headers: AccessToken(storedUser.accessToken)
             })
         } catch (error) {
             toast.error("Error while saving changes")
         }
-        finally{
+        finally {
             setUpdateLoading(false)
         }
     }
@@ -153,20 +153,20 @@ const ActualComp = () => {
                         }
                     </label>
                     <input type="file"
-                        ref={fileInputRef} 
+                        ref={fileInputRef}
                         id='avatar' onChange={(e) => {
-                        console.log("selected")
-                        console.log(e.target.files?.[0])
-                        const file = e.target.files?.[0];
-                        if (file) Upload(file)
+                            console.log("selected")
+                            console.log(e.target.files?.[0])
+                            const file = e.target.files?.[0];
+                            if (file) Upload(file)
                         }} className="hidden" />
                 </div>
             </div>
 
             {/* Details form */}
-            <form 
-            onSubmit={handleSubmit(onSubmit)}
-            className='w-full flex flex-col'>
+            <form
+                onSubmit={handleSubmit(onSubmit)}
+                className='w-full flex flex-col'>
 
                 <label htmlFor="bio" className='mb-4 font-bold'>Bio</label>
                 <textarea {...register("bio")} rows={3} maxLength={150} name="bio" id="bio" className='border-1 border-gray-600 w-full rounded-lg outline-none p-2 overflow-y-auto' />
@@ -191,7 +191,7 @@ const ActualComp = () => {
                             Choose whether people can see similar account suggestions on your profile.
                         </span>
                     </p>
-                    <button onClick={() => setShowSuggestion((prev) => !prev)} type='button' className={`w-11 relative h-6 rounded-2xl flex flex-row items-center transition-colors duration-500 ${showSugesstions ? "bg-white":"bg-black border-1 border-gray-600"}`}>
+                    <button onClick={() => setShowSuggestion((prev) => !prev)} type='button' className={`w-11 relative h-6 rounded-2xl flex flex-row items-center transition-colors duration-500 ${showSugesstions ? "bg-white" : "bg-black border-1 border-gray-600"}`}>
                         <span
                             className={`
                             absolute top-0 left-0
@@ -203,16 +203,16 @@ const ActualComp = () => {
                     </button>
                 </div>
 
-                <button 
-                type='submit'
-                className='w-full py-1 text-center bg-blue-700 mt-4 rounded-lg'
+                <button
+                    type='submit'
+                    className='w-full py-1 text-center bg-blue-700 mt-4 rounded-lg'
                 >
                     {updateLoading ? <div className='flex flex-row gap-1 w-full h-full justify-center'>
 
                         <span className='flex gap-1'>Uploading</span>
                         <span className=' px-2.5  border-dotted border-2 rounded-full duration-300 animate-spin'></span>
-                    </div> 
-                    :"Save Changes"} 
+                    </div>
+                        : "Save Changes"}
                 </button>
             </form>
         </section>

@@ -1,18 +1,26 @@
 
+'use client'
+import { MessageContext } from '@/context/MessageContext';
 import { WebSocketContext } from '@/context/WebSockectComp';
-import { useCallback, useContext, useRef, useState } from 'react'
+import { useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { CiFaceSmile } from "react-icons/ci";
 import { CiImageOn } from "react-icons/ci";
 import { CiHeart } from "react-icons/ci";
 import { IoIosSend } from "react-icons/io";
+import { localStorageMessage } from './ChatBox';
 
 
-const MessageInput = ({ chatId, userId }: { chatId: string, userId :number}) => {
+const MessageInput = ({ chatId, userId }: { chatId: string, userId: number }) => {
+
+
+    //getting messages context
+    const localMessageContext = useContext(MessageContext);
 
     const socket = useContext(WebSocketContext)
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
     const [sendButtonVisible, setSendButtonVisible] = useState<boolean>(false)
 
+    //showing send button when there is a message
     const handleInput = () => {
         const textarea = textareaRef.current;
         if (textarea) {
@@ -27,22 +35,97 @@ const MessageInput = ({ chatId, userId }: { chatId: string, userId :number}) => 
         }
     };
 
-
+    //sending message to the server
     const handleSendMessage = useCallback(() => {
         if (!socket || !textareaRef.current?.value) return;
 
         const value = textareaRef.current.value;
+        textareaRef.current.value = ""; // Clear the textarea
 
-        socket.emit("sendMessage", {
-            text: value,
-            chatId,
-            senderId: userId,
-        });
+        try {
 
-        console.log("sent")
-        textareaRef.current.value = "";
-        handleInput();
+            //saving message to local storage
+
+            const localId = Date.now();
+
+            if (localMessageContext) {
+
+                localMessageContext.addMessage({
+                    text: value,
+                    chatId,
+                    senderId: userId,
+                    localId,
+                });
+            }
+
+
+            // Emit the message to the server
+
+            socket.emit("sendMessage", {
+                text: value,
+                photo: null,
+                chatId,
+                senderId: userId,
+                localId,
+            });
+
+            console.log("sent")
+
+            handleInput();
+        } catch (error) {
+            console.error("Error sending message:", error);
+        }
     }, [socket, chatId, userId]);
+
+
+    // Resending messages when the user comes back online
+    useEffect(() => {
+
+        const retrySendingMessages = () => {
+
+            const savedMessages = localStorage.getItem("savedMessages");
+            if (!savedMessages || !socket) return;
+
+            // Parse the saved messages from local storage
+            const parsedMessages = JSON.parse(savedMessages)
+
+
+            if (parsedMessages.length > 0) {
+
+                try {
+                    // Emit the message to the server
+                    parsedMessages.forEach((message: localStorageMessage) => {
+                        socket.emit("sendMessage", {
+                            text: message.text || null,
+                            photo: message.photo || null,
+                            chatId: message.chatId,
+                            senderId: message.senderId,
+                            localId: message.localId,
+                        });
+                    });
+
+                    console.log("✅ Offline messages resent");
+
+                    const handleOnline = () => {
+                        if (socket) {
+                            retrySendingMessages();
+                        }
+                    };
+
+
+                    window.addEventListener("online", handleOnline);
+                    return () => {
+                        window.removeEventListener("online", handleOnline);
+                    }
+
+                } catch (error) {
+                    console.error("Error sending offline messages");
+                }
+            }
+        }
+    }, [socket]);
+
+
 
     return (
         <div className='absolute bottom-11 md:bottom-0 px-4 w-full min-h-17 md:min-h-19 flex pb-2 md:pb-4 items-end justify-center border-b-1 line z-50 bg-black'>
@@ -77,15 +160,15 @@ const MessageInput = ({ chatId, userId }: { chatId: string, userId :number}) => 
                             title='Send photo'
                             className='cursor-pointer'
                         >
-                            <CiImageOn size={30}/>
+                            <CiImageOn size={30} />
                         </button>
                         <button
                             title='Send like'
                             className='cursor-pointer'
                         >
-                            <CiHeart size={30}/>
+                            <CiHeart size={30} />
                         </button>
-                        
+
                     </>
                 )}
 

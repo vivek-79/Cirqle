@@ -17,14 +17,14 @@ export const getRedis = async (): Promise<RedisClientType> => {
 
     if (!redisClient) {
 
+        console.log("Getting redis client")
         redisClient = createClient({
             username: 'default',
-            password: REDIS_PASSWORD,
             socket: {
                 host: REDIS_HOST,
                 port: REDIS_PORT,
                 reconnectStrategy: (retries) => {
-                    if (retries > 5) {
+                    if (retries > 10) {
                         console.error('Too many Redis reconnection attempts.');
                         return new Error('Redis reconnect failed');
                     }

@@ -1,33 +1,32 @@
-import { UnauthorizedException } from "@nestjs/common";
-import { NextFunction, Request, Response } from "express";
-import { verify } from "jsonwebtoken"
+import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from "@nestjs/common";
+import { Request } from "express";
+import { JwtPayload, verify } from "jsonwebtoken"
 
-
-
-export function userMiddleWare(req: Request, res: Response, next: NextFunction) {
-
-    //accessing cookie
-    const authorizationHeader = req.headers['authorization']
-
-    //checking if exists
-    if (!authorizationHeader) {
-        throw new UnauthorizedException()
-    }
-
-    const access_Token = authorizationHeader.split(" ")[1]
-
-    const acessToken_secret = process.env.ACCESS_TOKEN_SECRET!
-
-    try {
-        const data = verify(access_Token, acessToken_secret)
-
-        if (!data || typeof data === 'string' || !('email' in data)) {
-            throw new UnauthorizedException()
-        }
+@Injectable()
+export class JwtAuthGuard implements CanActivate {
+    canActivate(context:ExecutionContext):boolean {
         
-        next();
+        const request = context.switchToHttp().getRequest<Request>();
+        const authHeader = request.headers['authorization']
 
-    } catch (error) {
-        throw new UnauthorizedException("Invalid or expired refresh token");
+
+        if(!authHeader) throw new UnauthorizedException("No token provided");
+
+        const token = authHeader.split(" ")[1]
+        const acessToken_secret = process.env.ACCESS_TOKEN_SECRET!
+
+
+        try {
+            
+            const payload = verify(token, acessToken_secret) as JwtPayload & { id: number, email: string }  
+            if (!payload || typeof payload === 'string' || !('id' in payload)) {
+                throw new UnauthorizedException("Invalid token");
+            }
+
+            request.user = payload;
+            return true
+        } catch (error) {
+            throw new UnauthorizedException("Invalid or expired token");            
+        }
     }
 }

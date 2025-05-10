@@ -1,8 +1,10 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, Query, UseGuards } from '@nestjs/common';
 import { FriendService } from './friend.service';
 import { FriendRequestDto, RemoveFriendDto } from './dto/friend-request.dto';
+import { JwtAuthGuard } from 'src/user.middleware';
 
 @Controller('friend')
+@UseGuards(JwtAuthGuard)
 export class FriendController {
   constructor(private readonly friendService: FriendService) {}
 

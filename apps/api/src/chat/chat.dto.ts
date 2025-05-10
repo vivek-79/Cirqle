@@ -18,7 +18,8 @@ export class SEND_MESSAGE{
     text?:string | null;
     photo?:string | null;
     chatId:string;
-    senderId:number
+    senderId:number;
+    localId:number
 }
 
 export class CHAT_MEMBERS{
@@ -39,5 +40,6 @@ export class PROCESSED_MESSAGE{
         id:string
         seenBy:CHAT_MEMBERS[]
         sender: CHAT_MEMBERS
+        localId?:number
     }
 }

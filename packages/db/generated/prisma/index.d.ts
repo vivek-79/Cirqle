@@ -82,6 +82,16 @@ export const NotificationType: {
 
 export type NotificationType = (typeof NotificationType)[keyof typeof NotificationType]
 
+
+export const MESSAGE_STATUS: {
+  PENDING: 'PENDING',
+  SENT: 'SENT',
+  DELIVERED: 'DELIVERED',
+  READ: 'READ'
+};
+
+export type MESSAGE_STATUS = (typeof MESSAGE_STATUS)[keyof typeof MESSAGE_STATUS]
+
 }
 
 export type FriendRequestStatus = $Enums.FriendRequestStatus
@@ -91,6 +101,10 @@ export const FriendRequestStatus: typeof $Enums.FriendRequestStatus
 export type NotificationType = $Enums.NotificationType
 
 export const NotificationType: typeof $Enums.NotificationType
+
+export type MESSAGE_STATUS = $Enums.MESSAGE_STATUS
+
+export const MESSAGE_STATUS: typeof $Enums.MESSAGE_STATUS
 
 /**
  * ##  Prisma Client ʲˢ
@@ -11246,6 +11260,7 @@ export namespace Prisma {
     id: string | null
     text: string | null
     photo: string | null
+    status: $Enums.MESSAGE_STATUS | null
     createdAt: Date | null
     updatedAt: Date | null
     chatId: string | null
@@ -11256,6 +11271,7 @@ export namespace Prisma {
     id: string | null
     text: string | null
     photo: string | null
+    status: $Enums.MESSAGE_STATUS | null
     createdAt: Date | null
     updatedAt: Date | null
     chatId: string | null
@@ -11266,6 +11282,7 @@ export namespace Prisma {
     id: number
     text: number
     photo: number
+    status: number
     createdAt: number
     updatedAt: number
     chatId: number
@@ -11286,6 +11303,7 @@ export namespace Prisma {
     id?: true
     text?: true
     photo?: true
+    status?: true
     createdAt?: true
     updatedAt?: true
     chatId?: true
@@ -11296,6 +11314,7 @@ export namespace Prisma {
     id?: true
     text?: true
     photo?: true
+    status?: true
     createdAt?: true
     updatedAt?: true
     chatId?: true
@@ -11306,6 +11325,7 @@ export namespace Prisma {
     id?: true
     text?: true
     photo?: true
+    status?: true
     createdAt?: true
     updatedAt?: true
     chatId?: true
@@ -11403,6 +11423,7 @@ export namespace Prisma {
     id: string
     text: string | null
     photo: string | null
+    status: $Enums.MESSAGE_STATUS
     createdAt: Date
     updatedAt: Date
     chatId: string
@@ -11432,6 +11453,7 @@ export namespace Prisma {
     id?: boolean
     text?: boolean
     photo?: boolean
+    status?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     chatId?: boolean
@@ -11446,6 +11468,7 @@ export namespace Prisma {
     id?: boolean
     text?: boolean
     photo?: boolean
+    status?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     chatId?: boolean
@@ -11458,6 +11481,7 @@ export namespace Prisma {
     id?: boolean
     text?: boolean
     photo?: boolean
+    status?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     chatId?: boolean
@@ -11470,13 +11494,14 @@ export namespace Prisma {
     id?: boolean
     text?: boolean
     photo?: boolean
+    status?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     chatId?: boolean
     senderId?: boolean
   }
 
-  export type MessageOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "text" | "photo" | "createdAt" | "updatedAt" | "chatId" | "senderId", ExtArgs["result"]["message"]>
+  export type MessageOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "text" | "photo" | "status" | "createdAt" | "updatedAt" | "chatId" | "senderId", ExtArgs["result"]["message"]>
   export type MessageInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     seenBy?: boolean | Message$seenByArgs<ExtArgs>
     chat?: boolean | ChatDefaultArgs<ExtArgs>
@@ -11503,6 +11528,7 @@ export namespace Prisma {
       id: string
       text: string | null
       photo: string | null
+      status: $Enums.MESSAGE_STATUS
       createdAt: Date
       updatedAt: Date
       chatId: string
@@ -11936,6 +11962,7 @@ export namespace Prisma {
     readonly id: FieldRef<"Message", 'String'>
     readonly text: FieldRef<"Message", 'String'>
     readonly photo: FieldRef<"Message", 'String'>
+    readonly status: FieldRef<"Message", 'MESSAGE_STATUS'>
     readonly createdAt: FieldRef<"Message", 'DateTime'>
     readonly updatedAt: FieldRef<"Message", 'DateTime'>
     readonly chatId: FieldRef<"Message", 'String'>
@@ -12496,6 +12523,7 @@ export namespace Prisma {
     id: 'id',
     text: 'text',
     photo: 'photo',
+    status: 'status',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt',
     chatId: 'chatId',
@@ -12608,6 +12636,20 @@ export namespace Prisma {
    * Reference to a field of type 'FriendRequestStatus[]'
    */
   export type ListEnumFriendRequestStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'FriendRequestStatus[]'>
+    
+
+
+  /**
+   * Reference to a field of type 'MESSAGE_STATUS'
+   */
+  export type EnumMESSAGE_STATUSFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'MESSAGE_STATUS'>
+    
+
+
+  /**
+   * Reference to a field of type 'MESSAGE_STATUS[]'
+   */
+  export type ListEnumMESSAGE_STATUSFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'MESSAGE_STATUS[]'>
     
 
 
@@ -13208,6 +13250,7 @@ export namespace Prisma {
     id?: StringFilter<"Message"> | string
     text?: StringNullableFilter<"Message"> | string | null
     photo?: StringNullableFilter<"Message"> | string | null
+    status?: EnumMESSAGE_STATUSFilter<"Message"> | $Enums.MESSAGE_STATUS
     createdAt?: DateTimeFilter<"Message"> | Date | string
     updatedAt?: DateTimeFilter<"Message"> | Date | string
     chatId?: StringFilter<"Message"> | string
@@ -13221,6 +13264,7 @@ export namespace Prisma {
     id?: SortOrder
     text?: SortOrderInput | SortOrder
     photo?: SortOrderInput | SortOrder
+    status?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     chatId?: SortOrder
@@ -13237,6 +13281,7 @@ export namespace Prisma {
     NOT?: MessageWhereInput | MessageWhereInput[]
     text?: StringNullableFilter<"Message"> | string | null
     photo?: StringNullableFilter<"Message"> | string | null
+    status?: EnumMESSAGE_STATUSFilter<"Message"> | $Enums.MESSAGE_STATUS
     createdAt?: DateTimeFilter<"Message"> | Date | string
     updatedAt?: DateTimeFilter<"Message"> | Date | string
     chatId?: StringFilter<"Message"> | string
@@ -13250,6 +13295,7 @@ export namespace Prisma {
     id?: SortOrder
     text?: SortOrderInput | SortOrder
     photo?: SortOrderInput | SortOrder
+    status?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     chatId?: SortOrder
@@ -13268,6 +13314,7 @@ export namespace Prisma {
     id?: StringWithAggregatesFilter<"Message"> | string
     text?: StringNullableWithAggregatesFilter<"Message"> | string | null
     photo?: StringNullableWithAggregatesFilter<"Message"> | string | null
+    status?: EnumMESSAGE_STATUSWithAggregatesFilter<"Message"> | $Enums.MESSAGE_STATUS
     createdAt?: DateTimeWithAggregatesFilter<"Message"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"Message"> | Date | string
     chatId?: StringWithAggregatesFilter<"Message"> | string
@@ -13848,6 +13895,7 @@ export namespace Prisma {
     id?: string
     text?: string | null
     photo?: string | null
+    status?: $Enums.MESSAGE_STATUS
     createdAt?: Date | string
     updatedAt?: Date | string
     seenBy?: UserCreateNestedManyWithoutSeenMessagesInput
@@ -13859,6 +13907,7 @@ export namespace Prisma {
     id?: string
     text?: string | null
     photo?: string | null
+    status?: $Enums.MESSAGE_STATUS
     createdAt?: Date | string
     updatedAt?: Date | string
     chatId: string
@@ -13870,6 +13919,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     text?: NullableStringFieldUpdateOperationsInput | string | null
     photo?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: EnumMESSAGE_STATUSFieldUpdateOperationsInput | $Enums.MESSAGE_STATUS
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     seenBy?: UserUpdateManyWithoutSeenMessagesNestedInput
@@ -13881,6 +13931,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     text?: NullableStringFieldUpdateOperationsInput | string | null
     photo?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: EnumMESSAGE_STATUSFieldUpdateOperationsInput | $Enums.MESSAGE_STATUS
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     chatId?: StringFieldUpdateOperationsInput | string
@@ -13892,6 +13943,7 @@ export namespace Prisma {
     id?: string
     text?: string | null
     photo?: string | null
+    status?: $Enums.MESSAGE_STATUS
     createdAt?: Date | string
     updatedAt?: Date | string
     chatId: string
@@ -13902,6 +13954,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     text?: NullableStringFieldUpdateOperationsInput | string | null
     photo?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: EnumMESSAGE_STATUSFieldUpdateOperationsInput | $Enums.MESSAGE_STATUS
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -13910,6 +13963,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     text?: NullableStringFieldUpdateOperationsInput | string | null
     photo?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: EnumMESSAGE_STATUSFieldUpdateOperationsInput | $Enums.MESSAGE_STATUS
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     chatId?: StringFieldUpdateOperationsInput | string
@@ -14498,6 +14552,13 @@ export namespace Prisma {
     lastMessageAt?: SortOrder
   }
 
+  export type EnumMESSAGE_STATUSFilter<$PrismaModel = never> = {
+    equals?: $Enums.MESSAGE_STATUS | EnumMESSAGE_STATUSFieldRefInput<$PrismaModel>
+    in?: $Enums.MESSAGE_STATUS[] | ListEnumMESSAGE_STATUSFieldRefInput<$PrismaModel>
+    notIn?: $Enums.MESSAGE_STATUS[] | ListEnumMESSAGE_STATUSFieldRefInput<$PrismaModel>
+    not?: NestedEnumMESSAGE_STATUSFilter<$PrismaModel> | $Enums.MESSAGE_STATUS
+  }
+
   export type ChatScalarRelationFilter = {
     is?: ChatWhereInput
     isNot?: ChatWhereInput
@@ -14507,6 +14568,7 @@ export namespace Prisma {
     id?: SortOrder
     text?: SortOrder
     photo?: SortOrder
+    status?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     chatId?: SortOrder
@@ -14521,6 +14583,7 @@ export namespace Prisma {
     id?: SortOrder
     text?: SortOrder
     photo?: SortOrder
+    status?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     chatId?: SortOrder
@@ -14531,6 +14594,7 @@ export namespace Prisma {
     id?: SortOrder
     text?: SortOrder
     photo?: SortOrder
+    status?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     chatId?: SortOrder
@@ -14539,6 +14603,16 @@ export namespace Prisma {
 
   export type MessageSumOrderByAggregateInput = {
     senderId?: SortOrder
+  }
+
+  export type EnumMESSAGE_STATUSWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.MESSAGE_STATUS | EnumMESSAGE_STATUSFieldRefInput<$PrismaModel>
+    in?: $Enums.MESSAGE_STATUS[] | ListEnumMESSAGE_STATUSFieldRefInput<$PrismaModel>
+    notIn?: $Enums.MESSAGE_STATUS[] | ListEnumMESSAGE_STATUSFieldRefInput<$PrismaModel>
+    not?: NestedEnumMESSAGE_STATUSWithAggregatesFilter<$PrismaModel> | $Enums.MESSAGE_STATUS
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumMESSAGE_STATUSFilter<$PrismaModel>
+    _max?: NestedEnumMESSAGE_STATUSFilter<$PrismaModel>
   }
 
   export type NotificationCreateNestedManyWithoutSenderInput = {
@@ -15411,6 +15485,10 @@ export namespace Prisma {
     connect?: UserWhereUniqueInput | UserWhereUniqueInput[]
   }
 
+  export type EnumMESSAGE_STATUSFieldUpdateOperationsInput = {
+    set?: $Enums.MESSAGE_STATUS
+  }
+
   export type UserUpdateManyWithoutSeenMessagesNestedInput = {
     create?: XOR<UserCreateWithoutSeenMessagesInput, UserUncheckedCreateWithoutSeenMessagesInput> | UserCreateWithoutSeenMessagesInput[] | UserUncheckedCreateWithoutSeenMessagesInput[]
     connectOrCreate?: UserCreateOrConnectWithoutSeenMessagesInput | UserCreateOrConnectWithoutSeenMessagesInput[]
@@ -15636,6 +15714,23 @@ export namespace Prisma {
     _max?: NestedEnumFriendRequestStatusFilter<$PrismaModel>
   }
 
+  export type NestedEnumMESSAGE_STATUSFilter<$PrismaModel = never> = {
+    equals?: $Enums.MESSAGE_STATUS | EnumMESSAGE_STATUSFieldRefInput<$PrismaModel>
+    in?: $Enums.MESSAGE_STATUS[] | ListEnumMESSAGE_STATUSFieldRefInput<$PrismaModel>
+    notIn?: $Enums.MESSAGE_STATUS[] | ListEnumMESSAGE_STATUSFieldRefInput<$PrismaModel>
+    not?: NestedEnumMESSAGE_STATUSFilter<$PrismaModel> | $Enums.MESSAGE_STATUS
+  }
+
+  export type NestedEnumMESSAGE_STATUSWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: $Enums.MESSAGE_STATUS | EnumMESSAGE_STATUSFieldRefInput<$PrismaModel>
+    in?: $Enums.MESSAGE_STATUS[] | ListEnumMESSAGE_STATUSFieldRefInput<$PrismaModel>
+    notIn?: $Enums.MESSAGE_STATUS[] | ListEnumMESSAGE_STATUSFieldRefInput<$PrismaModel>
+    not?: NestedEnumMESSAGE_STATUSWithAggregatesFilter<$PrismaModel> | $Enums.MESSAGE_STATUS
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedEnumMESSAGE_STATUSFilter<$PrismaModel>
+    _max?: NestedEnumMESSAGE_STATUSFilter<$PrismaModel>
+  }
+
   export type NotificationCreateWithoutSenderInput = {
     id?: string
     type: $Enums.NotificationType
@@ -15782,6 +15877,7 @@ export namespace Prisma {
     id?: string
     text?: string | null
     photo?: string | null
+    status?: $Enums.MESSAGE_STATUS
     createdAt?: Date | string
     updatedAt?: Date | string
     chat: ChatCreateNestedOneWithoutMessagesInput
@@ -15792,6 +15888,7 @@ export namespace Prisma {
     id?: string
     text?: string | null
     photo?: string | null
+    status?: $Enums.MESSAGE_STATUS
     createdAt?: Date | string
     updatedAt?: Date | string
     chatId: string
@@ -15917,6 +16014,7 @@ export namespace Prisma {
     id?: string
     text?: string | null
     photo?: string | null
+    status?: $Enums.MESSAGE_STATUS
     createdAt?: Date | string
     updatedAt?: Date | string
     seenBy?: UserCreateNestedManyWithoutSeenMessagesInput
@@ -15927,6 +16025,7 @@ export namespace Prisma {
     id?: string
     text?: string | null
     photo?: string | null
+    status?: $Enums.MESSAGE_STATUS
     createdAt?: Date | string
     updatedAt?: Date | string
     chatId: string
@@ -16095,6 +16194,7 @@ export namespace Prisma {
     id?: StringFilter<"Message"> | string
     text?: StringNullableFilter<"Message"> | string | null
     photo?: StringNullableFilter<"Message"> | string | null
+    status?: EnumMESSAGE_STATUSFilter<"Message"> | $Enums.MESSAGE_STATUS
     createdAt?: DateTimeFilter<"Message"> | Date | string
     updatedAt?: DateTimeFilter<"Message"> | Date | string
     chatId?: StringFilter<"Message"> | string
@@ -17490,6 +17590,7 @@ export namespace Prisma {
     id?: string
     text?: string | null
     photo?: string | null
+    status?: $Enums.MESSAGE_STATUS
     createdAt?: Date | string
     updatedAt?: Date | string
     seenBy?: UserCreateNestedManyWithoutSeenMessagesInput
@@ -17500,6 +17601,7 @@ export namespace Prisma {
     id?: string
     text?: string | null
     photo?: string | null
+    status?: $Enums.MESSAGE_STATUS
     createdAt?: Date | string
     updatedAt?: Date | string
     senderId: number
@@ -17874,6 +17976,7 @@ export namespace Prisma {
     id?: string
     text?: string | null
     photo?: string | null
+    status?: $Enums.MESSAGE_STATUS
     createdAt?: Date | string
     updatedAt?: Date | string
     chatId: string
@@ -18007,6 +18110,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     text?: NullableStringFieldUpdateOperationsInput | string | null
     photo?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: EnumMESSAGE_STATUSFieldUpdateOperationsInput | $Enums.MESSAGE_STATUS
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     chat?: ChatUpdateOneRequiredWithoutMessagesNestedInput
@@ -18017,6 +18121,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     text?: NullableStringFieldUpdateOperationsInput | string | null
     photo?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: EnumMESSAGE_STATUSFieldUpdateOperationsInput | $Enums.MESSAGE_STATUS
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     chatId?: StringFieldUpdateOperationsInput | string
@@ -18027,6 +18132,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     text?: NullableStringFieldUpdateOperationsInput | string | null
     photo?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: EnumMESSAGE_STATUSFieldUpdateOperationsInput | $Enums.MESSAGE_STATUS
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     chatId?: StringFieldUpdateOperationsInput | string
@@ -18148,6 +18254,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     text?: NullableStringFieldUpdateOperationsInput | string | null
     photo?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: EnumMESSAGE_STATUSFieldUpdateOperationsInput | $Enums.MESSAGE_STATUS
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     seenBy?: UserUpdateManyWithoutSeenMessagesNestedInput
@@ -18158,6 +18265,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     text?: NullableStringFieldUpdateOperationsInput | string | null
     photo?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: EnumMESSAGE_STATUSFieldUpdateOperationsInput | $Enums.MESSAGE_STATUS
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     chatId?: StringFieldUpdateOperationsInput | string
@@ -18168,6 +18276,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     text?: NullableStringFieldUpdateOperationsInput | string | null
     photo?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: EnumMESSAGE_STATUSFieldUpdateOperationsInput | $Enums.MESSAGE_STATUS
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     chatId?: StringFieldUpdateOperationsInput | string
@@ -18235,6 +18344,7 @@ export namespace Prisma {
     id?: string
     text?: string | null
     photo?: string | null
+    status?: $Enums.MESSAGE_STATUS
     createdAt?: Date | string
     updatedAt?: Date | string
     senderId: number
@@ -18304,6 +18414,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     text?: NullableStringFieldUpdateOperationsInput | string | null
     photo?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: EnumMESSAGE_STATUSFieldUpdateOperationsInput | $Enums.MESSAGE_STATUS
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     seenBy?: UserUpdateManyWithoutSeenMessagesNestedInput
@@ -18314,6 +18425,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     text?: NullableStringFieldUpdateOperationsInput | string | null
     photo?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: EnumMESSAGE_STATUSFieldUpdateOperationsInput | $Enums.MESSAGE_STATUS
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     senderId?: IntFieldUpdateOperationsInput | number
@@ -18324,6 +18436,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     text?: NullableStringFieldUpdateOperationsInput | string | null
     photo?: NullableStringFieldUpdateOperationsInput | string | null
+    status?: EnumMESSAGE_STATUSFieldUpdateOperationsInput | $Enums.MESSAGE_STATUS
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     senderId?: IntFieldUpdateOperationsInput | number

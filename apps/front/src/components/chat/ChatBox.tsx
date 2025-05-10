@@ -5,9 +5,13 @@ import { WebSocketContext } from '@/context/WebSockectComp'
 import axios from 'axios'
 import React, { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
-import {ClipLoader} from 'react-spinners'
+import { ClipLoader } from 'react-spinners'
 import { GoChevronDown } from "react-icons/go";
 import { newMessageSound } from '@/helpers/sounds'
+import { getTimeForMessage } from '@/helpers/timeConverter'
+import { LocalStorageMessage, MessageContext } from '@/context/MessageContext'
+import { CiClock2 } from "react-icons/ci";
+import { CiRedo } from "react-icons/ci";
 
 interface ChatProps {
     chatId?: string | null,
@@ -30,6 +34,7 @@ export type MESSAGE = {
     id: string
     seenBy: CHAT_MEMBERS[]
     sender: CHAT_MEMBERS
+    localId?: number
 }
 export type PROCESSED_MESSAGE = {
     id: string
@@ -38,12 +43,22 @@ export type PROCESSED_MESSAGE = {
     messages: MESSAGE[]
 }
 
+export type localStorageMessage = {
+    text?: string | null
+    photo?: File | null
+    chatId: string
+    senderId: number,
+    localId: number
+}
+
 const ChatBox = ({ chatId, userId, accessToken }: ChatProps) => {
 
     if (!chatId || !userId) {
         return <div>Invalid Chat</div>  // Or a fallback
     }
 
+    //getting messages context
+    const localMessageContext = useContext(MessageContext);
     const socket = useContext(WebSocketContext);
     const [chatInfo, setChatInfo] = useState<PROCESSED_MESSAGE | null>(null);
     const containerRef = useRef<HTMLUListElement | null>(null)
@@ -52,6 +67,7 @@ const ChatBox = ({ chatId, userId, accessToken }: ChatProps) => {
     const topRef = useRef<HTMLDivElement>(null);
     const moveTOBottomRef = useRef<HTMLButtonElement>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [retryingMessageId, setRetryingMessageId] = useState<number | null>(null);
     const pageRef = useRef(2);
 
 
@@ -83,10 +99,14 @@ const ChatBox = ({ chatId, userId, accessToken }: ChatProps) => {
         })()
     }, [chatId])
 
+
     //fetching real-time messages
     useEffect(() => {
 
         if (!socket) return;
+
+        //getting messages from local storage
+        const localMessage = localMessageContext?.messages?.filter((message) => message.chatId === chatId);
 
         socket.on("message", (data) => {
             console.log("Message received Chat box");
@@ -108,6 +128,18 @@ const ChatBox = ({ chatId, userId, accessToken }: ChatProps) => {
                 }
             })
 
+            //clearing local storage messages
+
+            if (localMessageContext && localMessage && localMessage?.length > 0) {
+
+                localMessageContext.clearMessages(data.messages?.localId)
+                const isRetriedMessage = retryingMessageId === data.messages?.localId;
+
+                if (isRetriedMessage) {
+                    setRetryingMessageId(null);
+                }
+            }
+
             //sound of message
             newMessageSound()
         })
@@ -116,7 +148,7 @@ const ChatBox = ({ chatId, userId, accessToken }: ChatProps) => {
             socket.off("connect");
             socket.off("message")
         }
-    }, [socket])
+    }, [socket, retryingMessageId, chatId, localMessageContext])
 
     //scrolling to bottom chat
     useLayoutEffect(() => {
@@ -128,7 +160,7 @@ const ChatBox = ({ chatId, userId, accessToken }: ChatProps) => {
             setHasScrolled(true);
         }
 
-        
+
     }, [hasScrolled])
 
     //infinite scrolling
@@ -142,10 +174,10 @@ const ChatBox = ({ chatId, userId, accessToken }: ChatProps) => {
         const observer = new IntersectionObserver(
             ([entry]) => {
                 if (entry.isIntersecting && !hasScrollFetchedRef.current) {
-                   
-                    (async()=>{
+
+                    (async () => {
                         setIsLoading(true);
-                        hasScrollFetchedRef.current=true;
+                        hasScrollFetchedRef.current = true;
 
                         try {
 
@@ -159,27 +191,27 @@ const ChatBox = ({ chatId, userId, accessToken }: ChatProps) => {
                             })
 
                             //validation and setting to array
-                            if(res.data && res.data.length>0){
+                            if (res.data && res.data.length > 0) {
 
-                                setChatInfo((prev)=>{
+                                setChatInfo((prev) => {
 
-                                    if(!prev){
+                                    if (!prev) {
                                         return null;
                                     }
-                                    return{
+                                    return {
 
                                         ...prev,
-                                        messages:[...prev?.messages,...res.data]
+                                        messages: [...prev?.messages, ...res.data]
                                     }
                                 })
-                                
+
                                 //increasing page size
-                                pageRef.current +=1;
-                                hasScrollFetchedRef.current=false;
+                                pageRef.current += 1;
+                                hasScrollFetchedRef.current = false;
                                 setIsLoading(false);
                             }
-                            else{
-                            
+                            else {
+
                                 hasScrollFetchedRef.current = true;
                                 setIsLoading(false);
                             }
@@ -187,7 +219,7 @@ const ChatBox = ({ chatId, userId, accessToken }: ChatProps) => {
 
                         } catch (error) {
                             toast.error("Error getting messages")
-                            hasScrollFetchedRef.current=false;
+                            hasScrollFetchedRef.current = false;
                         }
                     })()
                 }
@@ -203,14 +235,14 @@ const ChatBox = ({ chatId, userId, accessToken }: ChatProps) => {
         const showMoveToBottomButton = () => {
 
             if (!containerEl || !button) return;
-            const shouldShow =Math.abs(containerEl.scrollTop) > containerEl.clientHeight;
+            const shouldShow = Math.abs(containerEl.scrollTop) > containerEl.clientHeight;
             const isHidden = button.style.display === "none";
             if (shouldShow && isHidden) {
                 button.style.display = "flex";
-  
+
             }
             else if (!shouldShow && !isHidden) {
-              
+
                 button.style.display = "none";
             }
         }
@@ -240,45 +272,95 @@ const ChatBox = ({ chatId, userId, accessToken }: ChatProps) => {
             ))}
         </ul>
     }
-    
+
 
     //move to bottom
-    const moveToBottom=()=>{
-        
+    const moveToBottom = () => {
+
         const container = containerRef.current;
-        if(!container) return;
+        if (!container) return;
 
         container.scroll({
-            top:container.scrollHeight,
-            behavior:"smooth"
+            top: container.scrollHeight,
+            behavior: "smooth"
         })
+    }
+
+    //retry sending from localStorage
+    const retrySending = (message: LocalStorageMessage) => {
+
+        if (!socket || !message.text) return;
+
+        setRetryingMessageId(message.localId);
+
+        try {
+            // Emit the message to the server
+
+            socket.emit("sendMessage", {
+                text: message.text,
+                photo: message.photo || null,
+                chatId,
+                senderId: userId,
+                localId: message.localId
+            });
+
+
+            setTimeout(() => {
+                setRetryingMessageId((current) => {
+                    if (current === message.localId) {
+                        return null;
+                    }
+                    return current;
+                });
+            }, 2000)
+
+        } catch (error) {
+            console.log("Error while sendind message")
+        }
     }
 
     return (
         <div
-            
+
             className='relative h-dvh overflow-y-auto flex-1 text-white pb-20 md:pb-10'>
 
-                <ul
+            <ul
                 ref={containerRef}
                 className='flex max-h-full overflow-y-auto flex-col-reverse gap-1 w-full px-3 py-2 max-md:pb-8'>
                 {(chatInfo && chatInfo.messages?.length > 0) && (
                     <>
+                        {/* Local storage messages */}
                         {
-                            chatInfo.messages.map((message, indx) => (
-                                
-                                <li key={indx} className={`${message.sender.id !== userId ? 'self-start justify-start' : 'self-end justify-end'}  max-w-[60%] bg-black flex flex-row items-center`}>
-                                    <span className={`${message.sender.id !== userId ? 'bg-white/20' : 'bg-gray-700'} py-1 px-2 rounded-lg w-full break-words`}>{message.text}</span>
+                            localMessageContext?.messages?.map((message) => (
+                                <li key={message.localId} className='relative self-end justify-end bg-gray-700 flex-row  px-2 py-1 rounded-lg  max-w-[60%] flex gap-1 items-end'>
+                                    <button disabled={retryingMessageId === message.localId} onClick={() => retrySending(message)} className={`absolute -left-5 cursor-pointer hover-black ${retryingMessageId === message.localId ? 'animate-spin duration-300' : ''}`}><CiRedo size={20} /></button>
+                                    <span className={`${message.senderId !== userId ? '' : ''}  rounded-lg w-full break-words`}>{message.text}</span>
+                                    <span className='text-[10px] text-gray-400'><CiClock2 /></span>
                                 </li>
                             ))
                         }
 
+                        {/* server messages */}
+                        {
+                            chatInfo.messages.map((message, indx) => (
+
+                                <li key={message.id} className={`${message.sender.id !== userId ? 'self-start justify-start bg-white/20 flex-row-reverse' : 'self-end justify-end bg-gray-700 flex-row'}  px-2 py-1 rounded-lg  max-w-[60%] bg-black flex gap-1 items-end`}>
+                                    <span className={`${message.sender.id !== userId ? '' : ''}  rounded-lg w-full break-words`}>{message.text}</span>
+                                    <span className='text-[10px] flex gap-1'>
+                                        <span className=' text-gray-400'>{getTimeForMessage({ date: message.createdAt })}</span>
+                                        {message.sender.id === userId && <span className='text-gray-400'>✓</span>}
+                                    </span>
+                                </li>
+                            ))
+                        }
+
+
                         {/* SPinner */}
-                        
+
                         <div ref={topRef} className=" w-full h-10 flex flex-row justify-center items-end pt-10 overflow-hidden" >
                             <ClipLoader
-                            loading={isLoading}
-                            color='white'
+                                loading={isLoading}
+                                color='white'
                             />
                         </div>
                     </>
@@ -287,13 +369,13 @@ const ChatBox = ({ chatId, userId, accessToken }: ChatProps) => {
             </ul>
 
 
-                            
-            <button 
-            style={{ display: "none" }}
-            ref={moveTOBottomRef}
+
+            <button
+                style={{ display: "none" }}
+                ref={moveTOBottomRef}
                 onClick={moveToBottom}
                 className='absolute bottom-19 text-white left-1/2 -translate-x-1/2  flex-row items-end justify-center  rounded-full bg-white/40 hover-black cursor-pointer'>
-                <GoChevronDown className='up-down-animate' size={40}/>
+                <GoChevronDown className='up-down-animate' size={40} />
             </button>
         </div>
     )

@@ -2,13 +2,13 @@
 
 import React, { ReactNode, useEffect, useRef, useState } from 'react'
 import axios from 'axios'
-import { AccessToken, api} from '@/constants'
+import { AccessToken, api } from '@/constants'
 import { useStoredUser } from '@/hooks/store.actions'
 import { SiGodaddy } from "react-icons/si";
 import AddNewChatModal from '@/components/chat/AddNewChatModal'
 import { Chat } from '@/types'
 import Image from 'next/image'
-import { CloudImage } from '@/app/helpers/getFullImageUrl'
+import { CloudImage } from '@/helpers/getFullImageUrl'
 import { useRouter } from 'next/navigation'
 
 const LayoutComp = ({ children }: { children: ReactNode }) => {

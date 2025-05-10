@@ -1,4 +1,4 @@
-import { hoursAgo } from '@/app/helpers/timeConverter';
+import { hoursAgo } from '@/helpers/timeConverter';
 import { AccessToken, api } from '@/constants';
 import { useStoredUser } from '@/hooks/store.actions';
 import axios from 'axios';
@@ -6,9 +6,9 @@ import { formatDistanceToNow } from 'date-fns';
 import React, { useEffect, useState } from 'react'
 import HighlightedBackground from '../HighlightedBackground';
 import Image from 'next/image';
-import { CloudImage } from '@/app/helpers/getFullImageUrl';
+import { CloudImage } from '@/helpers/getFullImageUrl';
 import ClientButton from '../ui/btn';
-import { sendFriendRequest } from '@/app/helpers/followerFlowHandler';
+import { sendFriendRequest } from '@/helpers/followerFlowHandler';
 import { toast } from 'sonner';
 import { User } from '@/types';
 
@@ -21,9 +21,9 @@ enum Notification_Type {
   FOLLOW,
 }
 
-export enum RESPONSE_TYPE{
-  FOLLOW ="FOLLOW",
-  UNFOLLOW ="UNFOLLOW"
+export enum RESPONSE_TYPE {
+  FOLLOW = "FOLLOW",
+  UNFOLLOW = "UNFOLLOW"
 }
 interface Notification {
   message: string,
@@ -35,7 +35,7 @@ interface Notification {
     name: string,
     id: number
   },
-  isOneWayFollow?:boolean
+  isOneWayFollow?: boolean
 }
 
 const Notification = () => {
@@ -81,7 +81,7 @@ const Notification = () => {
             ))}
             <hr className='line' />
           </>
-        )} 
+        )}
 
         {/*CURRENT MONTH NOTIFICATIONS */}
         {monthNotifs.length > 0 && (
@@ -92,7 +92,7 @@ const Notification = () => {
             ))}
             <hr className='line' />
           </>
-        )} 
+        )}
 
         {/*EARLIER NOTIFICATIONS */}
         {earlierNotifs.length > 0 && (
@@ -113,14 +113,14 @@ export default Notification;
 
 
 
-const NotifiCationShower = ({ notification,user}: { notification: Notification,user:User}) => {
+const NotifiCationShower = ({ notification, user }: { notification: Notification, user: User }) => {
 
   //Response to follower notifications
   const AddFriend = async ({ receiverId, type }: { receiverId: number, type: RESPONSE_TYPE }) => {
 
     if (!user.id || !user.accessToken) return;
 
-    const { message, status } = await sendFriendRequest({ senderId: user.id, receiverId, accessToken: user.accessToken,request_type:type })
+    const { message, status } = await sendFriendRequest({ senderId: user.id, receiverId, accessToken: user.accessToken, request_type: type })
 
     if (status) {
       toast.success(message)
@@ -128,11 +128,11 @@ const NotifiCationShower = ({ notification,user}: { notification: Notification,u
     else {
       toast.error(message)
     }
-  } 
+  }
 
   return (
     <div className='px-2 flex flex-col'>
-      
+
       <div className='flex flex-row w-full h-17 items-center'>
         <Image src={CloudImage(notification.sender.avatar) || "/person.webp"} height={10} width={10} alt='person-image' className='w-9 h-9 rounded-full border-1 border-gray-600 flex-shrink-0' />
         <p className='ml-2'>
@@ -147,10 +147,10 @@ const NotifiCationShower = ({ notification,user}: { notification: Notification,u
           </span>
 
           <span>
-            {notification?.isOneWayFollow ? 
-              <ClientButton onPress={()=>AddFriend({type:RESPONSE_TYPE.FOLLOW,receiverId:notification.sender.id})} content="Follow Back" containerClass='ml-2 bg-blue-900/60 py-1 px-2 text-xs font-semibold rounded-md hover:bg-blue-800'/> 
+            {notification?.isOneWayFollow ?
+              <ClientButton onPress={() => AddFriend({ type: RESPONSE_TYPE.FOLLOW, receiverId: notification.sender.id })} content="Follow Back" containerClass='ml-2 bg-blue-900/60 py-1 px-2 text-xs font-semibold rounded-md hover:bg-blue-800' />
               :
-              <ClientButton onPress={() => AddFriend({ type: RESPONSE_TYPE.UNFOLLOW, receiverId:notification.sender.id })} content="Unfollow" containerClass='ml-2 bg-gray-800 py-1 px-2 text-xs font-semibold rounded-md hover:bg-gray-700'/>
+              <ClientButton onPress={() => AddFriend({ type: RESPONSE_TYPE.UNFOLLOW, receiverId: notification.sender.id })} content="Unfollow" containerClass='ml-2 bg-gray-800 py-1 px-2 text-xs font-semibold rounded-md hover:bg-gray-700' />
             }
           </span>
         </p>

@@ -200,6 +200,7 @@ exports.Prisma.MessageScalarFieldEnum = {
   id: 'id',
   text: 'text',
   photo: 'photo',
+  status: 'status',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
   chatId: 'chatId',
@@ -232,6 +233,13 @@ exports.FriendRequestStatus = exports.$Enums.FriendRequestStatus = {
   Pending: 'Pending',
   Rejected: 'Rejected',
   Accepted: 'Accepted'
+};
+
+exports.MESSAGE_STATUS = exports.$Enums.MESSAGE_STATUS = {
+  PENDING: 'PENDING',
+  SENT: 'SENT',
+  DELIVERED: 'DELIVERED',
+  READ: 'READ'
 };
 
 exports.Prisma.ModelName = {

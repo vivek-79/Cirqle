@@ -1,11 +1,13 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, UploadedFile, UseInterceptors } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, UploadedFile, UseGuards, UseInterceptors } from "@nestjs/common";
 import { UserServices } from "./user.service";
 import { UpdateUserDto } from "src/dto";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { UploadImageType } from "src/lib/image-upload";
+import { JwtAuthGuard } from "src/user.middleware";
 
 
 @Controller('/user')
+@UseGuards(JwtAuthGuard)
 export class UserController {
 
     constructor(private readonly userService: UserServices) { }

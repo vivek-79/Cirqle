@@ -1,4 +1,4 @@
-import { CloudImage } from '@/app/helpers/getFullImageUrl';
+import { CloudImage } from '@/helpers/getFullImageUrl';
 import { AccessToken, api } from '@/constants';
 import { useStoredUser } from '@/hooks/store.actions'
 import axios from 'axios';
@@ -19,7 +19,7 @@ const AddNewChatModal = () => {
     const [searchedText, setSearchedText] = useState<string>('');
     const [debouncedvalue, setDebouncedValue] = useState<string>('');
     const [displayedUsers, setDisplayedUsers] = useState<DisplayUsers[]>([])
-    const [newChat,setNewChat] = useState()
+    const [newChat, setNewChat] = useState()
 
 
     useEffect(() => {
@@ -64,23 +64,23 @@ const AddNewChatModal = () => {
     }, [debouncedvalue])
 
 
-    const createNewChat =async(receiverId:number)=>{
-        if(!receiverId || !user.id) return;
+    const createNewChat = async (receiverId: number) => {
+        if (!receiverId || !user.id) return;
 
-      try {
-          const data = {
-              receiverId,
-              senderId:user.id
-          }
-          const res = await axios.post(`${api}/chat/add`,data,{
-              withCredentials:true,
-              headers:AccessToken(user.accessToken)
-          });
-  
-          console.log(res.data)
-      } catch (error) {
-        toast.error("Server error try again.")
-      }
+        try {
+            const data = {
+                receiverId,
+                senderId: user.id
+            }
+            const res = await axios.post(`${api}/chat/add`, data, {
+                withCredentials: true,
+                headers: AccessToken(user.accessToken)
+            });
+
+            console.log(res.data)
+        } catch (error) {
+            toast.error("Server error try again.")
+        }
     }
 
     return (
@@ -93,7 +93,7 @@ const AddNewChatModal = () => {
             <div className='w-full h-[250px] text-white overflow-y-auto pb-4'>
                 {displayedUsers?.length > 0 && (
                     displayedUsers.map((friend) => (
-                        <button onClick={()=>createNewChat(friend.id)} key={friend.id} className='w-full h-12 flex flex-row items-center justify-between px-4 pt-4'>
+                        <button onClick={() => createNewChat(friend.id)} key={friend.id} className='w-full h-12 flex flex-row items-center justify-between px-4 pt-4'>
                             <span className='flex flex-row gap-2 items-center'>
                                 <Image src={friend.avatar ? CloudImage(friend.avatar) : "/person.webp"}
                                     width={10}
@@ -107,7 +107,7 @@ const AddNewChatModal = () => {
                                 </span>
                             </span>
 
-                            <span><SiCaddy size={20} className='cursor-pointer hover-black text-gray-400'/></span>
+                            <span><SiCaddy size={20} className='cursor-pointer hover-black text-gray-400' /></span>
                         </button>
                     ))
                 )}

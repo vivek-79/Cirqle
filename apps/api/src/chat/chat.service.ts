@@ -92,46 +92,112 @@ export class ChatService {
         }
     }
 
-    async getChatDetails({ chatId }: { chatId: string,}) {
+    async getChatDetails({ chatId, userId }: { chatId: string, userId:number }) {
 
         try {
-            const chatDetail = await this.prisma.chat.findFirst({
-                where: {
-                    id: chatId
-                },
-                select: {
-                    id:true,
-                    members: {
-                        select: {
-                            name: true,
-                            avatar: true,
-                            id: true,
-                        }
+
+            console.log("fetcher",userId)
+            const chatDetail = await this.prisma.$transaction(async (tx) => {
+
+                // Step 1: Fetch chat with last 20 messages
+                const fetchedChat = await tx.chat.findFirst({
+                    where: {
+                        id: chatId
                     },
-                    messages: {
-                        select: {
-                            id: true,
-                            text: true,
-                            photo: true,
-                            createdAt: true,
-                            updatedAt: true,
-                            seenBy: true,
-                            sender:{
-                                select:{
-                                    name:true,
-                                    id:true,
-                                    avatar:true
-                                }
+                    select: {
+                        id: true,
+                        members: {
+                            select: {
+                                name: true,
+                                avatar: true,
+                                id: true,
                             }
                         },
-                        take: 20,
-                        orderBy: {
-                            createdAt: "desc"
+                        messages: {
+                            select: {
+                                id: true,
+                                text: true,
+                                photo: true,
+                                createdAt: true,
+                                updatedAt: true,
+                                seenBy: true,
+                                status: true,
+                                sender: {
+                                    select: {
+                                        name: true,
+                                        id: true,
+                                        avatar: true
+                                    }
+                                }
+                            },
+                            take: 20,
+                            orderBy: {
+                                createdAt: "desc"
+                            }
                         }
+                    },
+                });
+
+                // Step 1: Filtering out Ids of message with status:PENDING
+                const toUpdateIds = fetchedChat?.messages
+                    .filter(m => (m.status == "PENDING" && m.sender.id !==userId))
+                    .map(m => m.id)
+
+                //update and refetch delivered messages
+                if (toUpdateIds && toUpdateIds.length > 0) {
+                    const updatedMessages = await tx.message.updateMany({
+                        where: {
+                            id: { in: toUpdateIds }
+                        },
+                        data: {
+                            status: "DELIVERED"
+                        }
+                    })
+
+                    if (updatedMessages.count > 0) {
+                        const reFetchedMessage = await tx.message.findMany({
+                            where: {
+                                chatId
+                            },
+                            take: 20,
+                            orderBy: {
+                                createdAt: "desc"
+                            },
+                            select: {
+                                id: true,
+                                text: true,
+                                photo: true,
+                                createdAt: true,
+                                updatedAt: true,
+                                seenBy: true,
+                                status: true,
+                                sender: {
+                                    select: {
+                                        name: true,
+                                        id: true,
+                                        avatar: true
+                                    }
+                                }
+                            },
+                        });
+
+
+
+
+                        return {
+                            ...fetchedChat,
+                            messages: reFetchedMessage
+                        }
+
                     }
-                },
+                }
+
+                return fetchedChat
+
             })
-            
+
+
+
             return chatDetail;
         } catch (error) {
 

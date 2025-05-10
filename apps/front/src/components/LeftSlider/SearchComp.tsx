@@ -6,14 +6,14 @@ import React, { useState } from 'react'
 import HighlightedBackground from '../HighlightedBackground'
 import { toast } from 'sonner'
 import { useStoredUser } from '@/hooks/store.actions'
-import { sendFriendRequest } from '@/app/helpers/followerFlowHandler'
+import { sendFriendRequest } from '@/helpers/followerFlowHandler'
 
 
 
 const SearchComp = () => {
 
     const [searchedUsers, setSearchedUsers] = useState<User[]>([])
-    
+
     //getting user from custom hook
     const user = useStoredUser();
 
@@ -30,18 +30,18 @@ const SearchComp = () => {
 
 
     //sending request to user
-    const AddFriend = async (receiverId:number)=>{
+    const AddFriend = async (receiverId: number) => {
 
-        if(!user.id || !user.accessToken) return;
-        const { message,status } = await sendFriendRequest({senderId:user.id,receiverId,accessToken:user.accessToken})
+        if (!user.id || !user.accessToken) return;
+        const { message, status } = await sendFriendRequest({ senderId: user.id, receiverId, accessToken: user.accessToken })
 
-        if(status){
+        if (status) {
             toast.success(message)
         }
-        else{
+        else {
             toast.error(message)
         }
-    } 
+    }
 
 
     return (

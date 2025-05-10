@@ -11,7 +11,7 @@ import { RxBorderDotted } from "react-icons/rx";
 import PostLowerPart from './PostLowerPart'
 import { useStoredUser } from '@/hooks/store.actions'
 import { toast } from 'sonner'
-import { CloudImage } from '@/app/helpers/getFullImageUrl'
+import { CloudImage } from '@/helpers/getFullImageUrl'
 
 const Posts = () => {
 
@@ -22,12 +22,13 @@ const Posts = () => {
 
     useEffect(() => {
 
-        if (!user?.accessToken ) return;
+        if (!user?.accessToken) return;
 
         try {
             (async () => {
-                const { data } = await axios.get(`${api}/post/page/${page}`, { withCredentials: true ,
-                    headers:{
+                const { data } = await axios.get(`${api}/post/page/${page}`, {
+                    withCredentials: true,
+                    headers: {
                         Authorization: `Bearer ${user?.accessToken}`,
                     }
                 });
@@ -38,12 +39,12 @@ const Posts = () => {
         }
     }, [user])
 
- 
+
 
     //calculating post time
 
-    const timesAgo =(time:string)=>{
-        const timesAgo =formatDistanceToNow(new Date(time))
+    const timesAgo = (time: string) => {
+        const timesAgo = formatDistanceToNow(new Date(time))
         const about = timesAgo.includes("about")
 
 
@@ -52,8 +53,8 @@ const Posts = () => {
             const formatedSuffix = timesAgo.split(" ")[1].slice(0, 1)
             return formatedNumber + formatedSuffix
         };
- 
-        const formatedTime= timesAgo.slice(6,-4);
+
+        const formatedTime = timesAgo.slice(6, -4);
         const formatedNumber = formatedTime.split(" ")[0]
         const formatedSuffix = formatedTime.split(" ")[1].slice(0, 1)
         return formatedNumber + formatedSuffix
@@ -65,13 +66,13 @@ const Posts = () => {
         <div className='w-full h-full font-insta'>
 
             <div className='mx-auto max-w-sm flex flex-col gap-3 my-4'>
-                {posts.map((post,indx) => (
+                {posts.map((post, indx) => (
                     <div key={indx} className='w-full h-fit flex flex-col'>
                         {/* top options */}
                         <div className='flex flex-row items-center relative w-full'>
                             {/* author detail */}
                             <div className='h-19'>
-                                <HighlightedBackground scale={0.7} img={post?.author?.avatar}/>
+                                <HighlightedBackground scale={0.7} img={post?.author?.avatar} />
                             </div>
                             <div>
                                 <p className='text-xs font-bold items-center flex gap-2'>
@@ -90,7 +91,7 @@ const Posts = () => {
 
                         {/* Post Lower part */}
 
-                        <PostLowerPart id={post?.id} count={post?._count} content={post.thumbnail} author={post?.author}/>
+                        <PostLowerPart id={post?.id} count={post?._count} content={post.thumbnail} author={post?.author} />
 
                         <hr className='mt-6 text-gray-700' />
                     </div>

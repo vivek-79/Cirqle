@@ -8,6 +8,7 @@ type MESSAGE_DTO = {
     photo?: string,
     chatId: string,
     senderId: number,
+    localId: number
 }
 
 (async () => {
@@ -25,7 +26,13 @@ type MESSAGE_DTO = {
 
         try {
             const res = await prisma.message.create({
-                data: msg,
+                data: {
+                    text: msg?.text,
+                    photo: msg?.photo,
+                    chatId: msg.chatId,
+                    senderId: msg.senderId,
+                    status:"SENT"
+                },
                 select: {
                     chat: {
                         select: {
@@ -44,6 +51,7 @@ type MESSAGE_DTO = {
                     createdAt: true,
                     updatedAt: true,
                     chatId: true,
+                    status:true,
                     sender: {
                         select: {
                             name: true,
@@ -73,8 +81,11 @@ type MESSAGE_DTO = {
                     updatedAt: res.updatedAt,
                     seenBy: res.seenBy,
                     sender: res.sender,
+                    status: res.status,
+                    localId: msg.localId
                 }
             }
+
             //sending back saved and processed message
             console.log("published from worker")
 

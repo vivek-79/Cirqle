@@ -135,6 +135,7 @@ model Message {
   id        String   @id @default(uuid())
   text      String?
   photo     String?
+  status    MESSAGE_STATUS @default(PENDING)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -157,4 +158,11 @@ enum NotificationType {
   COMMENT
   LIKE
   FOLLOW
+}
+
+enum MESSAGE_STATUS{
+  PENDING
+  SENT
+  DELIVERED
+  READ
 }

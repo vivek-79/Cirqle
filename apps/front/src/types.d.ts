@@ -62,7 +62,7 @@ export type EACH_PROCESSED_MESSAGE = {
     messages:MESSAGE
 }
 export interface ClientToServerEvents {
-    sendMessage: (data: { text: string, chatId: string, senderId:number }) => void;
+    sendMessage: (data: { text: string | null, photo:File | null , chatId: string, senderId:number,localId:number }) => void;
     // add more if needed
 }
 
