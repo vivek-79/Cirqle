@@ -1,12 +1,16 @@
-import { Injectable, InternalServerErrorException } from "@nestjs/common";
+import { forwardRef, Inject, Injectable, InternalServerErrorException } from "@nestjs/common";
 import { ChatGateway } from "./chat.gateway";
 import { PrismaService } from "src/prisma/prisma.service";
 import { CREATE_CHAT } from "./chat.dto";
+import { messageStatusUpdater } from "./messageStatusUpdater";
 
 
 @Injectable()
 export class ChatService {
-    constructor(private readonly chatGateway: ChatGateway, private readonly prisma: PrismaService) { }
+    constructor(
+        @Inject(forwardRef(() => ChatGateway))
+        private readonly chatGateway: ChatGateway, 
+        private readonly prisma: PrismaService) { }
 
     async getChats(id: number) {
 
@@ -92,11 +96,13 @@ export class ChatService {
         }
     }
 
-    async getChatDetails({ chatId, userId }: { chatId: string, userId:number }) {
+    async getChatDetails({ chatId, userId }: { chatId: string, userId: number }) {
 
         try {
 
-            console.log("fetcher",userId)
+            console.log("fetcher", userId)
+            
+            // let updatedStatusIds: { id: string; senderId: number }[] = [];
             const chatDetail = await this.prisma.$transaction(async (tx) => {
 
                 // Step 1: Fetch chat with last 20 messages
@@ -106,6 +112,9 @@ export class ChatService {
                     },
                     select: {
                         id: true,
+                        isGroup: true,
+                        name: true,
+                        groupAvatar: true,
                         members: {
                             select: {
                                 name: true,
@@ -120,8 +129,16 @@ export class ChatService {
                                 photo: true,
                                 createdAt: true,
                                 updatedAt: true,
-                                seenBy: true,
                                 status: true,
+                                statuses: {
+                                    select: {
+                                        id: true,
+                                        status: true,
+                                        seenAt: true,
+                                        deliveredAt: true,
+                                        userId: true
+                                    }
+                                },
                                 sender: {
                                     select: {
                                         name: true,
@@ -137,68 +154,35 @@ export class ChatService {
                         }
                     },
                 });
-
-                // Step 1: Filtering out Ids of message with status:PENDING
-                const toUpdateIds = fetchedChat?.messages
-                    .filter(m => (m.status == "PENDING" && m.sender.id !==userId))
-                    .map(m => m.id)
-
-                //update and refetch delivered messages
-                if (toUpdateIds && toUpdateIds.length > 0) {
-                    const updatedMessages = await tx.message.updateMany({
-                        where: {
-                            id: { in: toUpdateIds }
-                        },
-                        data: {
-                            status: "DELIVERED"
-                        }
-                    })
-
-                    if (updatedMessages.count > 0) {
-                        const reFetchedMessage = await tx.message.findMany({
-                            where: {
-                                chatId
-                            },
-                            take: 20,
-                            orderBy: {
-                                createdAt: "desc"
-                            },
-                            select: {
-                                id: true,
-                                text: true,
-                                photo: true,
-                                createdAt: true,
-                                updatedAt: true,
-                                seenBy: true,
-                                status: true,
-                                sender: {
-                                    select: {
-                                        name: true,
-                                        id: true,
-                                        avatar: true
-                                    }
-                                }
-                            },
-                        });
-
-
-
-
-                        return {
-                            ...fetchedChat,
-                            messages: reFetchedMessage
-                        }
-
-                    }
+                if (!fetchedChat) {
+                    return {
+                        fetchedChat: null,
+                        toUpdateStatusIds: []
+                    };
                 }
+                const toUpdateStatusIds = await messageStatusUpdater({tx, messages: fetchedChat.messages, members: fetchedChat?.members, acknowledge: "DELIVERED", userId: userId})
 
-                return fetchedChat
-
+                return{
+                    fetchedChat,
+                    toUpdateStatusIds,
+                }
             })
 
+            if (!chatDetail) {
+                return null;
+            }
 
+            // Step 3: Send ACK to client
+            if (chatDetail.toUpdateStatusIds && chatDetail.toUpdateStatusIds.length > 0) {
+                await this.chatGateway.messageDeliveredAcknowledgement(
+                    chatDetail.toUpdateStatusIds.map(msg => msg.id),
+                    chatId,
+                    chatDetail.toUpdateStatusIds[0]?.senderId
+                );
+            }
 
-            return chatDetail;
+            return chatDetail.fetchedChat;
+            // Step 4: Return chat details
         } catch (error) {
 
             throw new InternalServerErrorException("Server error")

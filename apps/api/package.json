@@ -20,12 +20,13 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
-    "@repo/redis":"*",
     "@nestjs/common": "^11.0.1",
-    "@nestjs/mapped-types": "*",
     "@nestjs/core": "^11.0.1",
+    "@nestjs/event-emitter": "^3.0.1",
+    "@nestjs/mapped-types": "*",
     "@nestjs/platform-express": "^11.0.1",
     "@repo/db": "*",
+    "@repo/redis": "*",
     "dotenv": "^16.5.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"

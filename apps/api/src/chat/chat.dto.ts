@@ -27,19 +27,50 @@ export class CHAT_MEMBERS{
     name:string
     avatar?:string | null
 }
+
+
+export class MESSAGE{
+    text?: string | null
+    photo?: string | null
+    createdAt: Date    
+    updatedAt: Date
+    id: string
+    sender: CHAT_MEMBERS
+    localId?: number
+    status: string
+    statuses?: {
+        id: number
+        status: string
+        seenAt: Date | null
+        deliveredAt: Date | null
+        userId: number
+    }[]
+}
 export class PROCESSED_MESSAGE{
     id:string
     members:CHAT_MEMBERS[]
 
-    messages:{
+    messages: MESSAGE
+}
 
-        text?:string | null
-        photo?:string | null
-        createdAt:string
-        updatedAt:string
+
+export class ACKNOWLEDGE_DATA{
+    id:string
+    members:CHAT_MEMBERS[]
+    messages:MESSAGE[]
+}
+export type ACKNOWLEDGE = {
+    messageIds: string[]
+    chatId: string
+    userId: number,
+    acknowledge: "DELIVERED" | "READ"
+}
+
+export type ACKNOWLEDGE_TO_USER={
+    messageIds:{
         id:string
-        seenBy:CHAT_MEMBERS[]
-        sender: CHAT_MEMBERS
-        localId?:number
-    }
+        senderId:number
+    }[],
+    acknowledge:"DELIVERED" | "READ"|"SENT"
+    chatId:string
 }

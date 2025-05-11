@@ -20,9 +20,6 @@ export class RedisSubscriberService implements OnModuleInit {
         await subscribeChannel("newMessage", async (message) => {
 
             const parsed = JSON.parse(message) as PROCESSED_MESSAGE;
-
-            console.log("message from subscribe =>")
-            console.dir(parsed, { depth: null })
             await this.gateway.sendMessageBackToUser(parsed);
         })
     }

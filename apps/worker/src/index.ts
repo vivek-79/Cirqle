@@ -31,7 +31,7 @@ type MESSAGE_DTO = {
                     photo: msg?.photo,
                     chatId: msg.chatId,
                     senderId: msg.senderId,
-                    status:"SENT"
+                    status: "SENT",
                 },
                 select: {
                     chat: {
@@ -51,7 +51,7 @@ type MESSAGE_DTO = {
                     createdAt: true,
                     updatedAt: true,
                     chatId: true,
-                    status:true,
+                    status: true,
                     sender: {
                         select: {
                             name: true,
@@ -59,14 +59,6 @@ type MESSAGE_DTO = {
                             id: true,
                         }
                     },
-                    seenBy: {
-                        select: {
-                            id: true,
-                            name: true,
-                            avatar: true
-                        }
-                    }
-
                 },
             })
 
@@ -79,10 +71,9 @@ type MESSAGE_DTO = {
                     photo: res.photo,
                     createdAt: res.createdAt,
                     updatedAt: res.updatedAt,
-                    seenBy: res.seenBy,
-                    sender: res.sender,
                     status: res.status,
-                    localId: msg.localId
+                    localId: msg.localId,
+                    sender:res.sender,
                 }
             }
 

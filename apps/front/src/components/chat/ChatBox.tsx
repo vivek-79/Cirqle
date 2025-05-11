@@ -3,7 +3,7 @@
 import { AccessToken, api } from '@/constants'
 import { WebSocketContext } from '@/context/WebSockectComp'
 import axios from 'axios'
-import React, { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import React, { useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { ClipLoader } from 'react-spinners'
 import { GoChevronDown } from "react-icons/go";
@@ -12,12 +12,15 @@ import { getTimeForMessage } from '@/helpers/timeConverter'
 import { LocalStorageMessage, MessageContext } from '@/context/MessageContext'
 import { CiClock2 } from "react-icons/ci";
 import { CiRedo } from "react-icons/ci";
+import { MESSAGE_ACKNOWLEDGEMENT } from '@/types'
+import { MessageStatus } from '@/helpers/MessageStatus'
+import { channel } from 'diagnostics_channel'
 
 interface ChatProps {
     chatId?: string | null,
     userId?: number | null,
     accessToken?: string | null
-
+    data?: PROCESSED_MESSAGE | null
 }
 
 export type CHAT_MEMBERS = {
@@ -34,10 +37,14 @@ export type MESSAGE = {
     id: string
     seenBy: CHAT_MEMBERS[]
     sender: CHAT_MEMBERS
-    localId?: number
+    localId?: number,
+    status?: "SENT" | "DELIVERED" | "READ"
 }
 export type PROCESSED_MESSAGE = {
-    id: string
+    id: string,
+    isGroup?: boolean
+    name?: string
+    groupAvatar?: string | null
     members: CHAT_MEMBERS[]
 
     messages: MESSAGE[]
@@ -51,7 +58,8 @@ export type localStorageMessage = {
     localId: number
 }
 
-const ChatBox = ({ chatId, userId, accessToken }: ChatProps) => {
+
+const ChatBox = ({ chatId, userId, accessToken, data}: ChatProps) => {
 
     if (!chatId || !userId) {
         return <div>Invalid Chat</div>  // Or a fallback
@@ -60,8 +68,8 @@ const ChatBox = ({ chatId, userId, accessToken }: ChatProps) => {
     //getting messages context
     const localMessageContext = useContext(MessageContext);
     const socket = useContext(WebSocketContext);
-    const [chatInfo, setChatInfo] = useState<PROCESSED_MESSAGE | null>(null);
     const containerRef = useRef<HTMLUListElement | null>(null)
+    const [chatInfo, setChatInfo] = useState<PROCESSED_MESSAGE | null | undefined>(data);
     const [hasScrolled, setHasScrolled] = useState<boolean>();
     const hasScrollFetchedRef = useRef(false);
     const topRef = useRef<HTMLDivElement>(null);
@@ -72,83 +80,115 @@ const ChatBox = ({ chatId, userId, accessToken }: ChatProps) => {
 
 
 
-    //fetching previous messages
-    useEffect(() => {
-
-        if (!chatId || !accessToken) return;
-
-        (async () => {
-            try {
-
-                const res = await axios.get(`${api}/chat/details/${chatId}`, {
-                    params: {
-                        page: 1
-                    },
-                    withCredentials: true,
-                    headers: AccessToken(accessToken)
-                })
-
-                setChatInfo(res?.data)
-
-                //scrolling to bottom on 1st fetch
-                setHasScrolled(false);
-
-            } catch (error) {
-                toast.error("Error getting messages")
-            }
-        })()
-    }, [chatId])
-
-
     //fetching real-time messages
     useEffect(() => {
 
         if (!socket) return;
 
-        //getting messages from local storage
-        const localMessage = localMessageContext?.messages?.filter((message) => message.chatId === chatId);
+        try {
+            //getting messages from local storage
+            const localMessage = localMessageContext?.messages?.filter((message) => message.chatId === chatId);
 
-        socket.on("message", (data) => {
-            console.log("Message received Chat box");
-            console.log(data)
+            socket.on("message", (data) => {
+                console.log("Message received Chat box");
+                console.log(data)
 
-            if (!data || !data.messages) return;
+                if (!data || !data.messages) return;
+
+                setChatInfo((prev) => {
+
+                    if (!prev) return {
+                        id: data.id,
+                        members: data.members,
+                        messages: [data.messages]
+                    }
+
+                    return {
+                        ...prev,
+                        messages: [data.messages, ...prev.messages],
+                    }
+                })
+
+
+                //sending acknowledgement to server
+
+                //filtering out messageIds from other users
+                const isSameSender = data.messages?.sender.id == userId;
+
+                if (!isSameSender) {
+
+                    socket.emit("messageAcknowledge", {
+
+                        messageIds: [data.messages.id],
+                        chatId: data.id,
+                        userId,
+                        acknowledge: "DELIVERED"
+                    })
+                }
+
+                //clearing local storage messages if same message is received
+                if (localMessageContext && localMessage && localMessage?.length > 0) {
+
+                    localMessageContext.clearMessages(data.messages?.localId)
+                    const isRetriedMessage = retryingMessageId === data.messages?.localId;
+
+                    if (isRetriedMessage) {
+                        setRetryingMessageId(null);
+                    }
+                }
+
+                //sound of message
+                newMessageSound()
+            })
+
+            return () => {
+                socket.off("connect");
+                socket.off("message");
+            }
+        } catch (error) {
+
+            console.log("Error while getting and sending message ack",error)
+        }
+    }, [socket, retryingMessageId, chatId, localMessageContext])
+
+    //Received acknowledgement of message
+    useEffect(() => {
+
+        if (!socket || !chatId) return;
+
+        //acknowledgement of message
+
+        socket.on("messageAcknowledgement", (data: MESSAGE_ACKNOWLEDGEMENT) => {
+
+
+            console.log("Message Acknowledged")
+            const { messageIds, chatId: receivedChatId, acknowledge } = data;
+
+            if (chatId !== receivedChatId) return;
 
             setChatInfo((prev) => {
+                if (!prev) return null;
 
-                if (!prev) return {
-                    id: data.id,
-                    members: data.members,
-                    messages: [data.messages]
-                }
+                const updatedMessages = prev.messages.map((message) => {
+
+                    const messageId = message.id;
+                    const toUpdateMessage = messageIds.find((msgId) => msgId === messageId);
+                    if (!toUpdateMessage) return message;
+
+                    //updating message status
+                    message.status = acknowledge;
+
+                    return message;
+                })
 
                 return {
                     ...prev,
-                    messages: [data.messages, ...prev.messages],
+                    messages: updatedMessages
                 }
             })
-
-            //clearing local storage messages
-
-            if (localMessageContext && localMessage && localMessage?.length > 0) {
-
-                localMessageContext.clearMessages(data.messages?.localId)
-                const isRetriedMessage = retryingMessageId === data.messages?.localId;
-
-                if (isRetriedMessage) {
-                    setRetryingMessageId(null);
-                }
-            }
-
-            //sound of message
-            newMessageSound()
         })
 
-        return () => {
-            socket.off("connect");
-            socket.off("message")
-        }
-    }, [socket, retryingMessageId, chatId, localMessageContext])
+    }, [chatId, socket])
 
     //scrolling to bottom chat
     useLayoutEffect(() => {
@@ -273,7 +313,6 @@ const ChatBox = ({ chatId, userId, accessToken }: ChatProps) => {
         </ul>
     }
 
-
     //move to bottom
     const moveToBottom = () => {
 
@@ -319,6 +358,23 @@ const ChatBox = ({ chatId, userId, accessToken }: ChatProps) => {
         }
     }
 
+    //sending seen message acknowledgement
+    useEffect(() => {
+
+        if (!socket) return;
+
+        const oberserver = new IntersectionObserver(([entry]) => {
+
+            if (entry.isIntersecting) {
+                socket.emit("messageAcknowledge", {
+                    messageIds: chatInfo?.messages.map((message) => message.id),
+                    chatId,
+                    userId,
+                    acknowledge: "READ"
+                })
+            }
+        })
+    })
     return (
         <div
 
@@ -344,11 +400,11 @@ const ChatBox = ({ chatId, userId, accessToken }: ChatProps) => {
                         {
                             chatInfo.messages.map((message, indx) => (
 
-                                <li key={message.id} className={`${message.sender.id !== userId ? 'self-start justify-start bg-white/20 flex-row-reverse' : 'self-end justify-end bg-gray-700 flex-row'}  px-2 py-1 rounded-lg  max-w-[60%] bg-black flex gap-1 items-end`}>
-                                    <span className={`${message.sender.id !== userId ? '' : ''}  rounded-lg w-full break-words`}>{message.text}</span>
+                                <li key={message.id} className={`${message.sender?.id !== userId ? 'self-start justify-start bg-white/20 flex-row-reverse' : 'self-end justify-end bg-gray-700 flex-row'}  px-2 py-1 rounded-lg  max-w-[60%] bg-black flex gap-1 items-end`}>
+                                    <span className={`${message.sender?.id !== userId ? '' : ''}  rounded-lg w-full break-words`}>{message.text}</span>
                                     <span className='text-[10px] flex gap-1'>
                                         <span className=' text-gray-400'>{getTimeForMessage({ date: message.createdAt })}</span>
-                                        {message.sender.id === userId && <span className='text-gray-400'>✓</span>}
+                                        {message.sender?.id === userId && <MessageStatus status={message.status} />}
                                     </span>
                                 </li>
                             ))

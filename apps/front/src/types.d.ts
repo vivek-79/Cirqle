@@ -55,18 +55,34 @@ export type ChatDetails={
     message:[]
 }
 
+export  type MESSAGE_ACKNOWLEDGEMENT = {
+    messageIds: string[]
+    chatId: string
+    acknowledge: "DELIVERED" | "READ"
+}
+
 export type EACH_PROCESSED_MESSAGE = {
     id: string
     members: CHAT_MEMBERS[]
 
     messages:MESSAGE
 }
+
+export type SEND_ACKNOWLEDGE={
+    messageIds: string[]
+    chatId: string
+    userId: number,
+    acknowledge: "DELIVERED" | "READ"
+}
 export interface ClientToServerEvents {
     sendMessage: (data: { text: string | null, photo:File | null , chatId: string, senderId:number,localId:number }) => void;
+    messageAcknowledge: (data: SEND_ACKNOWLEDGE)=> void;
     // add more if needed
 }
 
 export interface ServerToClientEvents {
     message: (data: EACH_PROCESSED_MESSAGE) => void;
+
+    messageAcknowledgement: (data: MESSAGE_ACKNOWLEDGEMENT) => void;
     // add more if needed
 }

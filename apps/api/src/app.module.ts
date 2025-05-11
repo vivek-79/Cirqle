@@ -11,9 +11,11 @@ import { FriendModule } from './friend/friend.module';
 import { NotificationModule } from './notification/notification.module';
 import { MessagesModule } from './messages/messages.module';
 import { RedisSubscriberModule } from './redis-subscriber/redis-subscriber.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
 @Module({
   imports: [
+    EventEmitterModule.forRoot(),
     ConfigModule.forRoot({ cache: true, isGlobal: true }),
     PrismaModule,
     UserModule,

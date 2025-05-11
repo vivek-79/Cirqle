@@ -7,7 +7,7 @@ type Props = {
     avatar?: string | null;
     isOnline?: boolean;
     lastOnline?: string;
-    name: string | null
+    name?: string
 }
 
 const ChatBoxHeader = ({ avatar, isOnline, lastOnline, name }: Props) => {

@@ -1,10 +1,13 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit, SubscribeMessage, WebSocketGateway, WebSocketServer } from "@nestjs/websockets";
 import { Server, Socket } from "socket.io";
-import { PROCESSED_MESSAGE, SEND_MESSAGE } from "./chat.dto";
+import { ACKNOWLEDGE, ACKNOWLEDGE_TO_USER, PROCESSED_MESSAGE, SEND_MESSAGE } from "./chat.dto";
 import { verify } from 'jsonwebtoken';
 import { rpushMessage } from '@repo/redis'
 import { redis } from "src/lib/redisSetup";
+import { ChatService } from "./chat.service";
+import { MessagesService } from "src/messages/messages.service";
+import { OnEvent } from "@nestjs/event-emitter";
 
 
 
@@ -18,7 +21,7 @@ import { redis } from "src/lib/redisSetup";
 })
 export class ChatGateway implements OnGatewayInit, OnGatewayConnection {
 
-
+  constructor(private readonly chatService: ChatService,private readonly messageService:MessagesService) { }
   private readonly logger = new Logger(ChatGateway.name)
 
   @WebSocketServer()
@@ -28,7 +31,7 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection {
     this.logger.log("initialized")
   }
 
-  async handleConnection(client: Socket,) {
+  async handleConnection(client: Socket) {
 
     const token = client.handshake.auth?.token
 
@@ -45,8 +48,6 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection {
       client.data.userId = user.id;
 
       await redis.set(`socket:${user.id}`, client.id);
-
-      this.logger.log(`Authenticated user and added to redis ${user.id}`);
 
     } catch (error) {
       this.logger.error(error);
@@ -67,12 +68,39 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection {
 
   @SubscribeMessage("sendMessage")
   async handleMessage(client: any, data: SEND_MESSAGE) {
-    this.logger.log(`Message received from client id: ${client.id}`);
-    this.logger.debug(`Payload: ${data}`);
-  
     await rpushMessage("message", JSON.stringify(data))
   }
 
+  @SubscribeMessage("messageAcknowledge")
+  async handleAcknowledge(client: any, data: ACKNOWLEDGE) {
+    this.logger.log(`Acknowledge receiver from:${data}`);
+
+    await this.messageService.acknowledgeMessages(data)
+  }
+
+  // Acknowledge message to user
+  @OnEvent("message.acknowledge", { async: true })
+  async handleAcknowledgement(data: ACKNOWLEDGE_TO_USER) {
+
+    await Promise.all((data.messageIds.map(async(message)=>{
+
+      const socketId = await redis.get(`socket:${message.senderId}`) as string
+
+      if(!socketId){
+        this.logger.warn(`User ${message.senderId} is not connected. Skipping emit Acknowledge.`);
+        return;
+      }
+
+      this.io.emit("messageAcknowledgement",{
+
+        messageIds: data.messageIds.map((message)=>message.id),
+        chatId: data.chatId,
+        acknowledge: data.acknowledge,
+      })
+    })))
+  }
+
+  // Send message to user
   async sendMessageBackToUser(message: PROCESSED_MESSAGE) {
 
     await Promise.all((message.members.map(async (member) => {
@@ -83,10 +111,31 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection {
         this.logger.warn(`User ${member.id} is  not connected. Skipping emit.`);
       }
       
-      console.log("message to subscribe =>")
-      console.dir(message,{depth:null})
       this.io.to(socketId).emit("message", message)
 
     })))
+  }
+
+
+  // Message Delivered Acknowledgement
+  async messageDeliveredAcknowledgement(messageIds: string[], chatId: string,senderId?: number) {
+
+    if (!senderId) {
+      this.logger.error("Sender ID is required for message acknowledgement");
+      return;
+    };
+
+    const socketId = await redis.get(`socket:${senderId}`) as string;
+
+    if (!socketId) {
+      this.logger.warn(`User ${senderId} is not connected. Skipping emit Acknowledge.`);
+      return;
+    }
+
+      this.io.to(socketId).emit("messageAcknowledgement",{
+        messageIds,
+        chatId,
+        acknowledge:"DELIVERED",
+      })
   }
 }

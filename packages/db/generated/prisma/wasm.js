@@ -200,11 +200,20 @@ exports.Prisma.MessageScalarFieldEnum = {
   id: 'id',
   text: 'text',
   photo: 'photo',
-  status: 'status',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
+  status: 'status',
   chatId: 'chatId',
   senderId: 'senderId'
+};
+
+exports.Prisma.MessageStatusScalarFieldEnum = {
+  id: 'id',
+  status: 'status',
+  seenAt: 'seenAt',
+  deliveredAt: 'deliveredAt',
+  userId: 'userId',
+  messageId: 'messageId'
 };
 
 exports.Prisma.SortOrder = {
@@ -235,8 +244,7 @@ exports.FriendRequestStatus = exports.$Enums.FriendRequestStatus = {
   Accepted: 'Accepted'
 };
 
-exports.MESSAGE_STATUS = exports.$Enums.MESSAGE_STATUS = {
-  PENDING: 'PENDING',
+exports.Status = exports.$Enums.Status = {
   SENT: 'SENT',
   DELIVERED: 'DELIVERED',
   READ: 'READ'
@@ -251,7 +259,8 @@ exports.Prisma.ModelName = {
   Comment: 'Comment',
   Like: 'Like',
   Chat: 'Chat',
-  Message: 'Message'
+  Message: 'Message',
+  MessageStatus: 'MessageStatus'
 };
 
 /**
