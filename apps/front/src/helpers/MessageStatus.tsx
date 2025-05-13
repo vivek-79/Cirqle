@@ -12,7 +12,7 @@ export const MessageStatus = ({ status }: { status?:string})=>{
         case "DELIVERED":
             return <IoCheckmarkDoneOutline size={13} className="self-center text-gray-300" />
         case "READ":
-            return <span className="text-blue-400"> ✓✓</span>
+            return <IoCheckmarkDoneOutline size={13} className="self-center text-blue-400" />
         default:
             return null
     }

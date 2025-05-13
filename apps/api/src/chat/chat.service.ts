@@ -9,7 +9,7 @@ import { messageStatusUpdater } from "./messageStatusUpdater";
 export class ChatService {
     constructor(
         @Inject(forwardRef(() => ChatGateway))
-        private readonly chatGateway: ChatGateway, 
+        private readonly chatGateway: ChatGateway,
         private readonly prisma: PrismaService) { }
 
     async getChats(id: number) {
@@ -25,11 +25,24 @@ export class ChatService {
                 },
                 select: {
                     id: true,
-                    lastMessage: true,
-                    lastMessageAt: true,
                     name: true,
                     groupAvatar: true,
                     isGroup: true,
+                    lastMessage: {
+                        select: {
+                            id: true,
+                            photo: true,
+                            text: true,
+                            createdAt: true,
+                            statuses: {
+                                select: {
+                                    userId: true,
+                                    status: true
+                                }
+                            },
+                            senderId: true,
+                        }
+                    },
                     members: {
                         select: {
                             id: true,
@@ -46,16 +59,46 @@ export class ChatService {
                 const modifiedChats = chats.map((chat) => {
 
                     const receiver = chat.members.filter((member) => member.id != id)
+                    const lastMessage = chat.lastMessage
+                    //marking is seen last message
+
+                    if (!lastMessage) {
+                        return {
+                            ...chat,
+                            members: receiver
+                        }
+                    }
+
+                    const modifiedLastMessage ={
+                        id:lastMessage.id,
+                        text:lastMessage.text,
+                        photo:lastMessage.photo,
+                        seen:true,
+                        createdAt:lastMessage.createdAt
+                    }
+                    if (lastMessage.senderId === id) {
+                        return {
+                            ...chat,
+                            members: receiver,
+                            lastMessage: modifiedLastMessage
+                        }
+                    }
+
+                    const statuses = lastMessage.statuses || [];
+                    const isSeen = statuses.some((sts) => (sts.status === "DELIVERED" && sts.userId == id))
 
                     return {
                         ...chat,
-                        members: receiver
+                        members: receiver,
+                        lastMessage:{
+                            ...modifiedLastMessage,
+                            seen:isSeen
+                        }
                     }
                 })
 
                 return modifiedChats;
             }
-
             return chats;
         } catch (error) {
             return new InternalServerErrorException("Server error")
@@ -75,7 +118,7 @@ export class ChatService {
             })
 
             if (isChatExist) {
-                return isChatExist
+                return isChatExist.id
             }
 
 
@@ -90,7 +133,7 @@ export class ChatService {
                 }
             })
 
-            return newChat
+            return newChat.id
         } catch (error) {
             return new InternalServerErrorException("Server error")
         }
@@ -101,7 +144,7 @@ export class ChatService {
         try {
 
             console.log("fetcher", userId)
-            
+
             // let updatedStatusIds: { id: string; senderId: number }[] = [];
             const chatDetail = await this.prisma.$transaction(async (tx) => {
 
@@ -160,9 +203,9 @@ export class ChatService {
                         toUpdateStatusIds: []
                     };
                 }
-                const toUpdateStatusIds = await messageStatusUpdater({tx, messages: fetchedChat.messages, members: fetchedChat?.members, acknowledge: "DELIVERED", userId: userId})
+                const toUpdateStatusIds = await messageStatusUpdater({ tx, messages: fetchedChat.messages, members: fetchedChat?.members, acknowledge: "DELIVERED", userId: userId })
 
-                return{
+                return {
                     fetchedChat,
                     toUpdateStatusIds,
                 }
@@ -188,6 +231,7 @@ export class ChatService {
             throw new InternalServerErrorException("Server error")
         }
     }
+
 }
 
 

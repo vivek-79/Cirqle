@@ -37,7 +37,7 @@ export class MESSAGE{
     id: string
     sender: CHAT_MEMBERS
     localId?: number
-    status: string
+    status: "DELIVERED" | "READ" | "SENT"
     statuses?: {
         id: number
         status: string

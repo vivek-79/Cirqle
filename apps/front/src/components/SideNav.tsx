@@ -1,7 +1,7 @@
 
 "use client"
 import React, { useEffect, useRef, useState } from 'react'
-import { api, sideNav } from '@/constants'
+import { api, path, sideNav } from '@/constants'
 import Link from 'next/link'
 import Image from 'next/image'
 import LeftSliderComp from './LeftSlider/LeftSlider'
@@ -15,6 +15,7 @@ import { User } from '@/types'
 import { toast } from 'sonner'
 import { Riple } from "react-loading-indicators"
 import CreatePost from './CreatePost'
+import MessagesButton from './chat/MessagesButton'
 
 
 
@@ -37,10 +38,8 @@ const SideNav = () => {
     const { data: session, status } = useSession();
 
     const user = session?.user as User
-
     //Authenticate user
     useEffect(() => {
-
 
         if (status === "loading") {
             setLoading(true)
@@ -50,25 +49,28 @@ const SideNav = () => {
         if (status === "unauthenticated") {
             router.push("/signin")
         }
-        else {
-            // fetch user
+        // fetch user
+
+        const fetchUserAndInitSocket = async () => {
             try {
-                (async ()=>{
-                    const res = await axios.get(`${api}/auth/${user.id}`) 
-                    
-                    if(!res.data){
-                        toast.error("Error getting User")
-                    }
-                    dispatch(login({...res.data,accessToken:user.accessToken}))
-                })()
+                const res = await axios.get(`${api}/auth/${user.id}`)
+
+                if (!res.data) {
+                    toast.error("Error getting User")
+                    return;
+                }
+                dispatch(login({ ...res.data, accessToken: user.accessToken }));
+
             } catch (error) {
                 toast.error("Error getting User")
             }
+            finally{
+                setLoading(false)
+            }
         }
 
-        setLoading(false);
-
-    },[router,session?.user,status,dispatch]);
+        fetchUserAndInitSocket();
+    }, [router, session?.user, status, dispatch]);
 
     const buttonClicked = (name: string) => {
 
@@ -99,7 +101,8 @@ const SideNav = () => {
     }, [showSearch]);
 
 
-    if(loading){
+
+    if (loading) {
         return <div className='fixed inset-0 flex items-center justify-center'>
             <Riple color="#fdfdfd" size="medium" text="" textColor="" />
         </div>
@@ -115,24 +118,25 @@ const SideNav = () => {
                     {sideNav.map((Item) => (
                         <li key={Item.name} className={`${Item.large ? "hidden md:block" : "block"} flex items-center hover-black`}>
                             {Item.link ? (
-                                <Link href={Item.name === "Home" ? '/' :Item.name ==="Profile"?'/23': Item.name.toLowerCase()} className='w-full flex flex-row items-center font-semibold'>
+                                <Link href={Item.name === "Home" ? '/' : Item.name === "Profile" ? '/23' : `${path}/${Item.name.toLowerCase()}`} className='w-full flex flex-row items-center font-semibold'>
                                     {Item?.icon && <Item.icon size={Item?.size} />}
+                                    {Item.name === "Messages" && (<MessagesButton />)}
                                     {Item.name === "Profile" && (<span className=' w-7 h-7 border-1 rounded-full overflow-hidden'>
-                                        <Image src={ "/person.webp"} height={14} width={14} alt='profile-pic' className='w-full h-full object-cover object-center ' />
+                                        <Image src={"/person.webp"} height={14} width={14} alt='profile-pic' className='w-full h-full object-cover object-center ' />
                                     </span>)}
                                     <span style={{ fontWeight: 400 }} className='hidden xl:block pr-12 pl-2 '>{Item?.name}</span>
                                 </Link>
                             ) : (
                                 <button onClick={(e) => {
                                     e.stopPropagation()
-                                    if(Item.name==="Create"){
+                                    if (Item.name === "Create") {
                                         setShowCreatePostModal(true)
                                     }
-                                    else{
+                                    else {
 
                                         buttonClicked(Item.name);
                                     }
-                                    
+
                                 }} className='w-full flex flex-row items-center font-semibold'>
                                     {Item?.icon && <Item.icon size={Item?.size} />}
                                     <span style={{ fontWeight: 400 }} className='hidden xl:block pr-12 pl-2 '>{Item?.name}</span>
@@ -142,16 +146,16 @@ const SideNav = () => {
                     ))}
                 </ul>
             </div>
-            
+
             {/* Slider */}
-            <div ref={searchRef} style={{ width: showSearch ? 350 : 0 }} className='fixed top-0 left-18 xl:left-51 bottom-0 z-50 bg-black overflow-hidden pt-8 transition-all duration-500 shadow-md shadow-white'>
+            <div ref={searchRef} style={{ width: showSearch ? 250 : 0 }} className='fixed top-0 left-18 xl:left-51 bottom-0 z-50 bg-black overflow-hidden pt-8 transition-all duration-500 shadow-md shadow-white'>
                 <Provider store={store}>
                     <LeftSliderComp comp={currentVisibleComp} />
                 </Provider>
             </div>
             {/* Modal for Create Post */}
 
-            {showCreatePostModal &&(
+            {showCreatePostModal && (
                 <div className='fixed inset-0 flex items-center justify-center flex-col'>
                     <CreatePost setShowModal={setShowCreatePostModal} userId={user.id} accessToken={user.accessToken} />
                 </div>

@@ -161,19 +161,19 @@ export class FriendService {
       };
     }
   }
-  async findFriendWithNoChat({ id,name }: FRIEND_WITH_NO_CHAT) {
+  async findFriendWithNoChat({ id, name }: FRIEND_WITH_NO_CHAT) {
 
     console.log(name)
     try {
 
       const friends = await this.prisma.follows.findMany({
         where: {
-          followerId:id,
+          followerId: id,
           ...(name && {
-            following:{
-              name:{
-                startsWith:name,
-                mode:"insensitive"
+            following: {
+              name: {
+                startsWith: name,
+                mode: "insensitive"
               }
             }
           })
@@ -190,39 +190,23 @@ export class FriendService {
         },
         take: 10
       })
- 
+
       if (friends.length === 0) {
 
-      return []
-    };
-
-    const friendWithNoChat = await Promise.all(friends.map(async (friend) => {
-
-      const isInChat = await this.prisma.chat.findFirst({
-
-        where: {
-          AND: [
-            { members: { some: { id: id } } },
-            { members: { some: { id: friend.following.id } } }
-          ]
-        }
-      })
-
-      if (!isInChat) return friend.following;
-      return null;
-    }));
-
-    return friendWithNoChat.filter(Boolean);
-  } catch(error) {
-    return new InternalServerErrorException("Server error")
+        return []
+      };
+      const searchedResult = friends.map((frnd)=>frnd.following)
+      return searchedResult;
+    } catch (error) {
+      return new InternalServerErrorException("Server error")
+    }
   }
-}
 
-findOne(id: number) {
-  return `This action returns a #${id} friend`;
-}
+  findOne(id: number) {
+    return `This action returns a #${id} friend`;
+  }
 
-remove(id: number) {
-  return `This action removes a #${id} friend`;
-}
+  remove(id: number) {
+    return `This action removes a #${id} friend`;
+  }
 }

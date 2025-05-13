@@ -25,6 +25,7 @@ model User {
   suggestions Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  lastseen    DateTime?
 
   messagesStatuses       MessageStatus[]
   sentNotification      Notification[]   @relation("SentNotifications")
@@ -124,8 +125,9 @@ model Chat {
   name          String?
   groupAvatar   String?
   createdAt     DateTime @default(now())
-  lastMessage   String?
-  lastMessageAt DateTime @default(now())
+
+  lastMessageId   String? @unique
+  lastMessage Message? @relation("LastMesssageRelation",fields: [lastMessageId],references: [id],onDelete: Cascade)
 
   members  User[]    @relation("chatMembers")
   messages Message[]
@@ -145,6 +147,8 @@ model Message {
   chat     Chat   @relation(fields: [chatId], references: [id], onDelete: Cascade)
   senderId Int
   sender   User   @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  lastMessageInChat Chat? @relation("LastMesssageRelation")
 }
 
 model MessageStatus {

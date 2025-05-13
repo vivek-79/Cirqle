@@ -1,11 +1,12 @@
 import { CloudImage } from '@/helpers/getFullImageUrl';
-import { AccessToken, api } from '@/constants';
+import { AccessToken, api, path } from '@/constants';
 import { useStoredUser } from '@/hooks/store.actions'
 import axios from 'axios';
 import Image from 'next/image';
-import React, { useEffect, useState } from 'react'
+import React, { SetStateAction, useEffect, useState } from 'react'
 import { SiCaddy } from "react-icons/si";
 import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
 
 type DisplayUsers = {
     id: number,
@@ -13,12 +14,15 @@ type DisplayUsers = {
     name: string
 }
 
-const AddNewChatModal = () => {
+
+//used in messages/layoutComp
+const AddNewChatModal = ({onPress}:{onPress:React.Dispatch<SetStateAction<boolean>>}) => {
 
     const user = useStoredUser();
     const [searchedText, setSearchedText] = useState<string>('');
     const [debouncedvalue, setDebouncedValue] = useState<string>('');
     const [displayedUsers, setDisplayedUsers] = useState<DisplayUsers[]>([])
+    const router = useRouter()
     const [newChat, setNewChat] = useState()
 
 
@@ -32,7 +36,7 @@ const AddNewChatModal = () => {
                 headers: AccessToken(user.accessToken)
             });
 
-            setDisplayedUsers(res?.data)
+            setDisplayedUsers(res?.data || [])
         })()
     }, [])
 
@@ -77,14 +81,17 @@ const AddNewChatModal = () => {
                 headers: AccessToken(user.accessToken)
             });
 
-            console.log(res.data)
+            if(res.data){
+                router.push(`${path}/messages/${res.data}`);
+                onPress(false);
+            }
         } catch (error) {
             toast.error("Server error try again.")
         }
     }
 
     return (
-        <div className='modal w-[300px] md:w-[400px] py-2 bg-[#262626] flex flex-col items-center rounded-lg'>
+        <div className='modal w-[300px] md:w-[400px] py-2 bg-[#262626] flex flex-col items-center rounded-lg z-50'>
             <p className='text-sm font-bold'>New Message</p>
             <input type="text" onChange={(e) => { setSearchedText(e.target.value) }} placeholder='Search' className=' bg-white/40 h-10 rounded-md w-[90%]  outline-none px-2 mt-1' />
 

@@ -13,7 +13,7 @@ export const sideNav:SideNav[] =[
     { name: "Search", icon: IoSearchOutline, size: 26,link:false,large:true },
     { name: "Explore", icon: IoIosTrendingUp, size: 26, link: false },
     { name: "Reels", icon: TfiVideoClapper, size: 24, link: true },
-    { name: "Messages", icon: TbMessageCircleBolt, size: 26, link: true },
+    { name: "Messages", link: true },
     { name: "Notifications", icon: IoIosHeartEmpty, size: 26, link: false,large: true },
     { name: "Create", icon: MdOutlineAddBox, size: 26, link: false },
     { name: "Profile",link:true },
@@ -22,6 +22,8 @@ export const sideNav:SideNav[] =[
 ]
 
 export const api = process.env.NEXT_PUBLIC_BACKEND_URI!
+
+export const path = process.env.NEXT_PUBLIC_FRONTEND_URI!
 export const imageBaseUrl = process.env.NEXT_PUBLIC_IMAGE_BASE_URL!;
 export const AccessToken =(token:string | null | undefined)=>({
     Authorization: `Bearer ${token}`,                 

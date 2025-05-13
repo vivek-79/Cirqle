@@ -192,8 +192,7 @@ exports.Prisma.ChatScalarFieldEnum = {
   name: 'name',
   groupAvatar: 'groupAvatar',
   createdAt: 'createdAt',
-  lastMessage: 'lastMessage',
-  lastMessageAt: 'lastMessageAt'
+  lastMessageId: 'lastMessageId'
 };
 
 exports.Prisma.MessageScalarFieldEnum = {

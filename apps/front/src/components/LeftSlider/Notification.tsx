@@ -67,7 +67,7 @@ const Notification = () => {
   const monthNotifs = notifications.filter(n => hoursAgo(n.createdAt) >= 169 && hoursAgo(n.createdAt) < 5041);
   const earlierNotifs = notifications.filter(n => hoursAgo(n.createdAt) >= 5041);
   return (
-    <div className='w-full h-full'>
+    <div className='w-full h-full z-50'>
       <h2 className='text-2xl font-bold ml-2'>Notifications</h2>
 
       <div className='flex flex-col w-full h-full text-sm'>

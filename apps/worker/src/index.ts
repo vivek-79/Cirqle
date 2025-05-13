@@ -25,41 +25,54 @@ type MESSAGE_DTO = {
         const msg = JSON.parse(msgStr) as MESSAGE_DTO;
 
         try {
-            const res = await prisma.message.create({
-                data: {
-                    text: msg?.text,
-                    photo: msg?.photo,
-                    chatId: msg.chatId,
-                    senderId: msg.senderId,
-                    status: "SENT",
-                },
-                select: {
-                    chat: {
-                        select: {
-                            members: {
-                                select: {
-                                    id: true,
-                                    name: true,
-                                    avatar: true
-                                }
-                            },
-                        }
+            const res = await prisma.$transaction(async(tx)=>{
+
+                const data = await tx.message.create({
+                    data: {
+                        text: msg?.text,
+                        photo: msg?.photo,
+                        chatId: msg.chatId,
+                        senderId: msg.senderId,
+                        status: "SENT",
                     },
-                    id: true,
-                    text: true,
-                    photo: true,
-                    createdAt: true,
-                    updatedAt: true,
-                    chatId: true,
-                    status: true,
-                    sender: {
-                        select: {
-                            name: true,
-                            avatar: true,
-                            id: true,
-                        }
+                    select: {
+                        chat: {
+                            select: {
+                                members: {
+                                    select: {
+                                        id: true,
+                                        name: true,
+                                        avatar: true
+                                    }
+                                },
+                            }
+                        },
+                        id: true,
+                        text: true,
+                        photo: true,
+                        createdAt: true,
+                        updatedAt: true,
+                        chatId: true,
+                        status: true,
+                        sender: {
+                            select: {
+                                name: true,
+                                avatar: true,
+                                id: true,
+                            }
+                        },
                     },
-                },
+                })
+
+                await tx.chat.update({
+                    where:{
+                        id:msg.chatId
+                    },
+                    data:{
+                        lastMessageId:data.id
+                    }
+                })
+                return data
             })
 
             const modifiedData = {

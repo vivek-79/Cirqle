@@ -24,6 +24,7 @@ export class FriendController {
 
   @Get('/search/:id')
   searchedFriendWithNoChat(@Param('id',ParseIntPipe) id:number,@Query('name') name:string){
+    console.log("searches")
     return this.friendService.findFriendWithNoChat({id:id,name:name});
   }
 

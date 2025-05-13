@@ -38,10 +38,19 @@ export const messageStatusUpdater = async ({
             const hasReceived = message.statuses.some(s => s.userId === userId);
             const hasSeen = message.statuses.some(s => s.userId === userId && s.status === "READ");
 
-            console.log("has-Received",hasReceived)
-            const uniqueUserIds = [...new Set(message.statuses.filter(s => s.userId !== userId).map(s => s.userId))];
+            if ((hasReceived && acknowledge =="DELIVERED") || hasSeen) return null;
+            
+
+            const uniqueUserIds=()=>{
+                if (acknowledge == "DELIVERED") {
+                    return [...new Set(message.statuses.filter(s => s.userId !== userId).map(s => s.userId))];
+                }
+                if (acknowledge == "READ") {
+                    return [...new Set(message.statuses.filter(s => s.userId !== userId && s.status === "DELIVERED").map(s => s.userId))];
+                }
+            }
+
             const isLastUserToFetch = uniqueUserIds.length === members.length - 2;
-            if (hasReceived || hasSeen) return null;
 
             return {
                 messageId: message.id,
@@ -59,7 +68,7 @@ export const messageStatusUpdater = async ({
         if (idsToUpdate.length === 0 && isLastUserMessageIds.length === 0) {
             return [];
         }
-        if (idsToUpdate.length > 0) {
+        if (idsToUpdate.length > 0 && acknowledge !== "READ") {
             await tx.messageStatus.createMany({
                 data: idsToUpdate.map(id => ({
                     messageId: id,

@@ -1,9 +1,8 @@
 "use client"
 
 import { AccessToken, api } from '@/constants'
-import { WebSocketContext } from '@/context/WebSockectComp'
 import axios from 'axios'
-import React, { useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import React, { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { ClipLoader } from 'react-spinners'
 import { GoChevronDown } from "react-icons/go";
@@ -14,7 +13,9 @@ import { CiClock2 } from "react-icons/ci";
 import { CiRedo } from "react-icons/ci";
 import { MESSAGE_ACKNOWLEDGEMENT } from '@/types'
 import { MessageStatus } from '@/helpers/MessageStatus'
-import { channel } from 'diagnostics_channel'
+import {useSocket} from '@/hooks/webSocket'
+import { useUnseenMessageActions } from '@/hooks/store.actions'
+import { usePathname } from 'next/navigation'
 
 interface ChatProps {
     chatId?: string | null,
@@ -30,10 +31,10 @@ export type CHAT_MEMBERS = {
 }
 
 export type MESSAGE = {
-    text?: string | null
-    photo?: string | null
-    createdAt: string
-    updatedAt: string
+    text: string | null
+    photo: string | null
+    createdAt: Date
+    updatedAt: Date
     id: string
     seenBy: CHAT_MEMBERS[]
     sender: CHAT_MEMBERS
@@ -59,7 +60,7 @@ export type localStorageMessage = {
 }
 
 
-const ChatBox = ({ chatId, userId, accessToken, data}: ChatProps) => {
+const ChatBox = ({ chatId, userId, accessToken, data }: ChatProps) => {
 
     if (!chatId || !userId) {
         return <div>Invalid Chat</div>  // Or a fallback
@@ -67,7 +68,8 @@ const ChatBox = ({ chatId, userId, accessToken, data}: ChatProps) => {
 
     //getting messages context
     const localMessageContext = useContext(MessageContext);
-    const socket = useContext(WebSocketContext);
+    const socket = useSocket();
+    const { removeMessage , currentMessage} = useUnseenMessageActions()
     const containerRef = useRef<HTMLUListElement | null>(null)
     const [chatInfo, setChatInfo] = useState<PROCESSED_MESSAGE | null | undefined>(data);
     const [hasScrolled, setHasScrolled] = useState<boolean>();
@@ -76,22 +78,23 @@ const ChatBox = ({ chatId, userId, accessToken, data}: ChatProps) => {
     const moveTOBottomRef = useRef<HTMLButtonElement>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [retryingMessageId, setRetryingMessageId] = useState<number | null>(null);
+    const seenMessageRefs = useRef<Record<string, HTMLLIElement | null>>({});
+    const newlySeenMessageRefs = useRef<string[]>([]);
     const pageRef = useRef(2);
+    const pathname = usePathname()
 
-
+    //removing from unseen
 
     //fetching real-time messages
     useEffect(() => {
 
-        if (!socket) return;
+        if (!socket || !pathname.endsWith(chatId)) return;
 
         try {
             //getting messages from local storage
             const localMessage = localMessageContext?.messages?.filter((message) => message.chatId === chatId);
 
             socket.on("message", (data) => {
-                console.log("Message received Chat box");
-                console.log(data)
 
                 if (!data || !data.messages) return;
 
@@ -109,10 +112,17 @@ const ChatBox = ({ chatId, userId, accessToken, data}: ChatProps) => {
                     }
                 })
 
+                //setting to current
+                const modifiedMesssage = {
+                    id: data.id,
+                    photo: data.messages.photo,
+                    text: data.messages.text,
+                    createdAt: data.messages.createdAt,
+                    seen: false
+                }
+                currentMessage({ chatId: data.id, message: modifiedMesssage })
 
                 //sending acknowledgement to server
-
-                //filtering out messageIds from other users
                 const isSameSender = data.messages?.sender.id == userId;
 
                 if (!isSameSender) {
@@ -125,6 +135,8 @@ const ChatBox = ({ chatId, userId, accessToken, data}: ChatProps) => {
                         acknowledge: "DELIVERED"
                     })
                 }
+
+                //filtering out messageIds from other users
 
                 //clearing local storage messages if same message is received
                 if (localMessageContext && localMessage && localMessage?.length > 0) {
@@ -147,9 +159,9 @@ const ChatBox = ({ chatId, userId, accessToken, data}: ChatProps) => {
             }
         } catch (error) {
 
-            console.log("Error while getting and sending message ack",error)
+            console.log("Error while getting and sending message ack", error)
         }
-    }, [socket, retryingMessageId, chatId, localMessageContext])
+    }, [socket, retryingMessageId, chatId, localMessageContext,pathname])
 
     //Received acknowledgement of message
     useEffect(() => {
@@ -158,10 +170,8 @@ const ChatBox = ({ chatId, userId, accessToken, data}: ChatProps) => {
 
         //acknowledgement of message
 
-        socket.on("messageAcknowledgement", (data: MESSAGE_ACKNOWLEDGEMENT) => {
+        const handleMessageAck = (data: MESSAGE_ACKNOWLEDGEMENT) => {
 
-
-            console.log("Message Acknowledged")
             const { messageIds, chatId: receivedChatId, acknowledge } = data;
 
             if (chatId !== receivedChatId) return;
@@ -171,11 +181,14 @@ const ChatBox = ({ chatId, userId, accessToken, data}: ChatProps) => {
 
                 const updatedMessages = prev.messages.map((message) => {
 
+                    if (message.status === "READ") return message;
+
                     const messageId = message.id;
                     const toUpdateMessage = messageIds.find((msgId) => msgId === messageId);
                     if (!toUpdateMessage) return message;
 
                     //updating message status
+
                     message.status = acknowledge;
 
                     return message;
@@ -186,8 +199,13 @@ const ChatBox = ({ chatId, userId, accessToken, data}: ChatProps) => {
                     messages: updatedMessages
                 }
             })
-        })
+        }
 
+        socket.on("messageAcknowledgement", handleMessageAck);
+
+        return () => {
+            socket.off("messageAcknowledgement", handleMessageAck);
+        }
     }, [chatId, socket])
 
     //scrolling to bottom chat
@@ -361,20 +379,45 @@ const ChatBox = ({ chatId, userId, accessToken, data}: ChatProps) => {
     //sending seen message acknowledgement
     useEffect(() => {
 
-        if (!socket) return;
+        if (!socket || !chatInfo) return;
 
-        const oberserver = new IntersectionObserver(([entry]) => {
+        const oberserver = new IntersectionObserver((entries) => {
 
-            if (entry.isIntersecting) {
+            const visibleMessageIds = entries
+                .filter(entry => entry.isIntersecting)
+                .map(entry => entry.target.getAttribute('data-id'));
+
+            const seenMessages = visibleMessageIds.filter(Boolean) as string[];
+            const newSeenMessages =seenMessages.filter((messageId)=> !newlySeenMessageRefs.current.includes(messageId))
+            newlySeenMessageRefs.current = [...newlySeenMessageRefs.current, ...newSeenMessages];
+
+            if (newSeenMessages.length > 0) {
                 socket.emit("messageAcknowledge", {
-                    messageIds: chatInfo?.messages.map((message) => message.id),
+                    messageIds: newSeenMessages,
                     chatId,
                     userId,
                     acknowledge: "READ"
                 })
+
+                //updating store
+                removeMessage({chatId,messageIds:newSeenMessages})
             }
-        })
-    })
+        }, {
+            root: containerRef.current,
+            threshold: 0.6,
+        });
+
+        Object.entries(seenMessageRefs.current).forEach(([id, el]) => {
+
+            if (el) {
+                el.setAttribute('data-id', id);
+                oberserver.observe(el);
+            }
+        });
+
+        return () => oberserver.disconnect();
+    }, [socket, chatInfo])
+
     return (
         <div
 
@@ -388,7 +431,8 @@ const ChatBox = ({ chatId, userId, accessToken, data}: ChatProps) => {
                         {/* Local storage messages */}
                         {
                             localMessageContext?.messages?.map((message) => (
-                                <li key={message.localId} className='relative self-end justify-end bg-gray-700 flex-row  px-2 py-1 rounded-lg  max-w-[60%] flex gap-1 items-end'>
+                                <li
+                                    key={message.localId} className='relative self-end justify-end bg-gray-700 flex-row  px-2 py-1 rounded-lg  max-w-[60%] flex gap-1 items-end'>
                                     <button disabled={retryingMessageId === message.localId} onClick={() => retrySending(message)} className={`absolute -left-5 cursor-pointer hover-black ${retryingMessageId === message.localId ? 'animate-spin duration-300' : ''}`}><CiRedo size={20} /></button>
                                     <span className={`${message.senderId !== userId ? '' : ''}  rounded-lg w-full break-words`}>{message.text}</span>
                                     <span className='text-[10px] text-gray-400'><CiClock2 /></span>
@@ -398,13 +442,15 @@ const ChatBox = ({ chatId, userId, accessToken, data}: ChatProps) => {
 
                         {/* server messages */}
                         {
-                            chatInfo.messages.map((message, indx) => (
+                            chatInfo.messages.map((message) => (
 
-                                <li key={message.id} className={`${message.sender?.id !== userId ? 'self-start justify-start bg-white/20 flex-row-reverse' : 'self-end justify-end bg-gray-700 flex-row'}  px-2 py-1 rounded-lg  max-w-[60%] bg-black flex gap-1 items-end`}>
+                                <li
+                                    ref={(el) => { (message.sender.id !== userId && message.status !== "READ") ? seenMessageRefs.current[message.id] = el : null }}
+                                    key={message.id} className={`${message.sender?.id !== userId ? 'self-start justify-start bg-white/20' : 'self-end justify-end bg-gray-700 '} flex-row  px-2 py-1 rounded-lg  max-w-[60%] bg-black flex gap-1 items-end`}>
                                     <span className={`${message.sender?.id !== userId ? '' : ''}  rounded-lg w-full break-words`}>{message.text}</span>
-                                    <span className='text-[10px] flex gap-1'>
+                                    <span className='text-[10px] flex gap-1 flex-row'>
                                         <span className=' text-gray-400'>{getTimeForMessage({ date: message.createdAt })}</span>
-                                        {message.sender?.id === userId && <MessageStatus status={message.status} />}
+                                        <span>{message.sender?.id === userId && <MessageStatus status={message.status} />}</span>
                                     </span>
                                 </li>
                             ))

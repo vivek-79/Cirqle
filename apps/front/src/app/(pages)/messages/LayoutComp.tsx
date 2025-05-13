@@ -3,13 +3,14 @@
 import React, { ReactNode, useEffect, useRef, useState } from 'react'
 import axios from 'axios'
 import { AccessToken, api } from '@/constants'
-import { useStoredUser } from '@/hooks/store.actions'
+import { useChatStoredData, useLastMessage, useStoredUser, useUnseenMessageActions } from '@/hooks/store.actions'
 import { SiGodaddy } from "react-icons/si";
 import AddNewChatModal from '@/components/chat/AddNewChatModal'
 import { Chat } from '@/types'
 import Image from 'next/image'
 import { CloudImage } from '@/helpers/getFullImageUrl'
 import { useRouter } from 'next/navigation'
+import { StoreMessage } from '@/store/unseenMessage.slice'
 
 const LayoutComp = ({ children }: { children: ReactNode }) => {
 
@@ -18,7 +19,9 @@ const LayoutComp = ({ children }: { children: ReactNode }) => {
     const user = useStoredUser();
     const openModal = useRef<HTMLDivElement>(null);
     const router = useRouter()
-
+    const lastmessages = useLastMessage();
+    const {currentMessage} = useUnseenMessageActions()
+   
     //Fetching chat list
     useEffect(() => {
 
@@ -30,6 +33,13 @@ const LayoutComp = ({ children }: { children: ReactNode }) => {
                 withCredentials: true
             })
             setChatList(chats.data)
+
+            if(chats.data.length>0){
+
+                chats.data.map((dta: { id: string, lastMessage: StoreMessage })=>(
+                    currentMessage({ chatId: dta.id, message: dta.lastMessage })
+                ))
+            }
         })()
 
     }, [user])
@@ -57,15 +67,15 @@ const LayoutComp = ({ children }: { children: ReactNode }) => {
 
             {/* Add new chat Modal */}
             {showAddChatModal && (
-                <div className='fixed inset-0 bg-black/50' >
+                <div className='fixed inset-0 bg-black/50 z-50' >
                     <div ref={openModal}>
-                        <AddNewChatModal />
+                        <AddNewChatModal onPress={setShowAddChatModal}/>
                     </div>
                 </div>
             )}
 
             {/* User list */}
-            <div className='h-full w-25 md:w-[300px] line border-r-1 flex flex-col pt-10'>
+            <div className='h-full w-25 md:w-[250px] line border-r-1 flex flex-col pt-10'>
                 <div className='flex h-10 flex-row justify-between w-full max-md:justify-center md:px-2 items-center'>
                     <p className='hidden md:block font-bold text-lg'>{user.name}</p>
                     <button onClick={(e) => setShowAddChatModal((prev) => !prev)}><SiGodaddy size={22} /></button>
@@ -98,7 +108,10 @@ const LayoutComp = ({ children }: { children: ReactNode }) => {
                                         {chat.name || chat.members?.[0].name}
                                     </span>
                                     <span className='text-xs text-gray-300 font-semibold'>
-                                        {chat?.lastMessage}
+                                        {lastmessages[chat.id] 
+                                        ? lastmessages[chat.id].text || "Hii"
+                                        :''
+                                        }
                                     </span>
                                 </span>
                             </button>

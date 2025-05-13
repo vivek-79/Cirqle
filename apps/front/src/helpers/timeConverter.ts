@@ -31,7 +31,7 @@ import { formatDistanceToNow } from "date-fns";
   };
 
 
-  export const getTimeForMessage =({date}:{date:string})=>{
+  export const getTimeForMessage =({date}:{date:Date})=>{
 
       const time = new Date(date).toLocaleTimeString("en-us",{hour12:false,hour:"2-digit",minute:"2-digit"})
       return time;

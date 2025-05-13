@@ -1,13 +1,14 @@
 
 'use client'
 import { MessageContext } from '@/context/MessageContext';
-import { WebSocketContext } from '@/context/WebSockectComp';
+// import { WebSocketContext } from '@/lib/socket';
 import { useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { CiFaceSmile } from "react-icons/ci";
 import { CiImageOn } from "react-icons/ci";
 import { CiHeart } from "react-icons/ci";
 import { IoIosSend } from "react-icons/io";
 import { localStorageMessage } from './ChatBox';
+import { useSocket } from '@/hooks/webSocket';
 
 
 const MessageInput = ({ chatId, userId }: { chatId: string, userId: number }) => {
@@ -16,7 +17,7 @@ const MessageInput = ({ chatId, userId }: { chatId: string, userId: number }) =>
     //getting messages context
     const localMessageContext = useContext(MessageContext);
 
-    const socket = useContext(WebSocketContext)
+    const socket = useSocket()
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
     const [sendButtonVisible, setSendButtonVisible] = useState<boolean>(false)
 
@@ -37,6 +38,7 @@ const MessageInput = ({ chatId, userId }: { chatId: string, userId: number }) =>
 
     //sending message to the server
     const handleSendMessage = useCallback(() => {
+
         if (!socket || !textareaRef.current?.value) return;
 
         const value = textareaRef.current.value;
@@ -128,7 +130,7 @@ const MessageInput = ({ chatId, userId }: { chatId: string, userId: number }) =>
 
 
     return (
-        <div className='absolute bottom-11 md:bottom-0 px-4 w-full min-h-17 md:min-h-19 flex pb-2 md:pb-4 items-end justify-center border-b-1 line z-50 bg-black'>
+        <div className='absolute bottom-11 md:bottom-0 px-4 w-full min-h-17 md:min-h-19 flex pb-2 md:pb-4 items-end justify-center border-b-1 line z-20 bg-black'>
             <div className='w-full flex flex-row items-end justify-between border-1 border-gray-600 rounded-3xl px-2 py-2 gap-1 '>
                 <CiFaceSmile size={30} />
                 <textarea

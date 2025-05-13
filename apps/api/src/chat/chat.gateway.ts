@@ -48,7 +48,7 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection {
       client.data.userId = user.id;
 
       await redis.set(`socket:${user.id}`, client.id);
-
+      console.log("user Connected",user.id)
     } catch (error) {
       this.logger.error(error);
       client.disconnect();
@@ -73,9 +73,27 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection {
 
   @SubscribeMessage("messageAcknowledge")
   async handleAcknowledge(client: any, data: ACKNOWLEDGE) {
-    this.logger.log(`Acknowledge receiver from:${data}`);
+    this.logger.log(`Acknowledge receiver from:${JSON.stringify(data)}`);
 
     await this.messageService.acknowledgeMessages(data)
+  }
+
+  @SubscribeMessage("getUndeliveredMessagesCount")
+  async getUnseenMessageCount(client:any,data:{userId:number}){
+
+    const res = await this.messageService.getUndeliveredMessage(data.userId)
+
+    const socketId = client.id;
+    this.io.to(socketId).emit("undeliveredMessagesCount",res)
+  }
+
+  @SubscribeMessage("getUnseenMessages")
+  async getUnseenMessage(client:any,data:{userId:number}){
+
+    const res = await this.messageService.getUnseenMessage(data.userId)
+
+    const socketId = client.id;
+    this.io.to(socketId).emit("UnseenMessages",res)
   }
 
   // Acknowledge message to user
@@ -91,7 +109,7 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection {
         return;
       }
 
-      this.io.emit("messageAcknowledgement",{
+      this.io.to(socketId).emit("messageAcknowledgement",{
 
         messageIds: data.messageIds.map((message)=>message.id),
         chatId: data.chatId,
@@ -110,7 +128,6 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection {
       if (!socketId) {
         this.logger.warn(`User ${member.id} is  not connected. Skipping emit.`);
       }
-      
       this.io.to(socketId).emit("message", message)
 
     })))

@@ -2,7 +2,7 @@ import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { UpdateMessageDto } from './dto/update-message.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { ACKNOWLEDGE } from 'src/chat/chat.dto';
+import { ACKNOWLEDGE, PROCESSED_MESSAGE } from 'src/chat/chat.dto';
 import { ac } from '@upstash/redis/zmscore-CjoCv9kz';
 import { messageStatusUpdater } from 'src/chat/messageStatusUpdater';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -10,15 +10,15 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 @Injectable()
 export class MessagesService {
 
-  constructor(private readonly prisma:PrismaService, private readonly eventEmmiter:EventEmitter2){}
-  async find({chatId,page}:{chatId:string,page:number}) {
+  constructor(private readonly prisma: PrismaService, private readonly eventEmmiter: EventEmitter2) { }
+  async find({ chatId, page }: { chatId: string, page: number }) {
 
     try {
       const messages = await this.prisma.message.findMany({
-        where:{
-          chatId:chatId
+        where: {
+          chatId: chatId
         },
-        skip:(page-1)*20,
+        skip: (page - 1) * 20,
         take: 20,
         orderBy: {
           createdAt: "desc"
@@ -29,7 +29,7 @@ export class MessagesService {
           photo: true,
           createdAt: true,
           updatedAt: true,
-          status:true,
+          status: true,
           sender: {
             select: {
               name: true,
@@ -47,13 +47,13 @@ export class MessagesService {
   }
 
   // Acknowledge message
-  async acknowledgeMessages(data:ACKNOWLEDGE){
+  async acknowledgeMessages(data: ACKNOWLEDGE) {
     try {
-      
-      const {messageIds,userId,acknowledge,chatId} = data;
+
+      const { messageIds, userId, acknowledge, chatId } = data;
 
 
-      const toUpdateIds = await this.prisma.$transaction(async(tx)=>{
+      const toUpdateIds = await this.prisma.$transaction(async (tx) => {
 
         const messages = await tx.message.findMany({
           where: {
@@ -64,11 +64,11 @@ export class MessagesService {
           select: {
             id: true,
             status: true,
-            chat:{
-              select:{
-                members:{
-                  select:{
-                    id:true
+            chat: {
+              select: {
+                members: {
+                  select: {
+                    id: true
                   }
                 }
               }
@@ -87,15 +87,16 @@ export class MessagesService {
           }
         })
 
-        const toUpdateStatusIds = messageStatusUpdater({tx,members:messages[0].chat.members,messages,acknowledge,userId})
+        const toUpdateStatusIds = await messageStatusUpdater({ tx, members: messages[0].chat.members, messages, acknowledge, userId })
 
+        console.log("toUpdateStatusIds", toUpdateStatusIds)
         return toUpdateStatusIds
       })
 
-      if(toUpdateIds.length === 0) return;
+      if (toUpdateIds.length === 0) return;
 
-      this.eventEmmiter.emit("message.acknowledge",{
-        messageIds:toUpdateIds,
+      this.eventEmmiter.emit("message.acknowledge", {
+        messageIds: toUpdateIds,
         chatId,
         acknowledge
       })
@@ -103,20 +104,64 @@ export class MessagesService {
       throw new InternalServerErrorException("Server error")
     }
   }
-  create(createMessageDto: CreateMessageDto) {
-    return 'This action adds a new message';
+
+  //undelivered message
+  async getUndeliveredMessage(userId: number) {
+
+    const res = await this.prisma.message.findMany({
+      where:{
+        status:"SENT",
+        chat:{
+          members:{
+            some:{id:userId}
+          }
+        },
+        statuses:{
+          none:{
+            userId
+          }
+        },
+      },
+      select:{
+        id:true,
+        chatId:true,
+        senderId:true
+      }
+    })
+
+    return res;
   }
 
+  //unseen message
+  async getUnseenMessage(userId: number) {
 
-  findOne(id: number) {
-    return `This action returns a #${id} message`;
-  }
+    const res = await this.prisma.message.findMany({
+      where: {
+        OR:[
+          {status:"SENT"},
+          {status:"DELIVERED"}
+        ],
+        chat: {
+          members: {
+            some: { id: userId }
+          }
+        },
+        statuses:{
+          every:{
+            OR:[
+              {userId:{not:userId}},
+              {userId:userId,status:"DELIVERED"}
+            ]
+          },
+        },
+      },
+      select: {
+        id: true,
+        chatId: true,
+        senderId: true
+      }
+    })
 
-  update(id: number, updateMessageDto: UpdateMessageDto) {
-    return `This action updates a #${id} message`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} message`;
+    return res;
   }
 }

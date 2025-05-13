@@ -34,14 +34,15 @@ export type UserProfile = {
     suggestions:boolean
 }
 
-type Members={
-
-}
 export type Chat = {
     id:string,
     name:string | null
-    lastMessage:string | null
-    lastMessageAt:string
+    lastMessage:{
+        id:number,
+        photo:string | null,
+        text:string | null,
+        createdAt:Date
+    } | null,
     members:User[]
     isGroup:boolean
     groupAvatar:string | null,
@@ -74,9 +75,17 @@ export type SEND_ACKNOWLEDGE={
     userId: number,
     acknowledge: "DELIVERED" | "READ"
 }
+
+export type UNSEEN_MESSAGES={
+    id:string,
+    chatId:string,
+    senderId:number
+}
 export interface ClientToServerEvents {
     sendMessage: (data: { text: string | null, photo:File | null , chatId: string, senderId:number,localId:number }) => void;
     messageAcknowledge: (data: SEND_ACKNOWLEDGE)=> void;
+    getUndeliveredMessagesCount:(data:{userId:number})=>void;
+    getUnseenMessages:(data:{userId:number})=>void;
     // add more if needed
 }
 
@@ -84,5 +93,8 @@ export interface ServerToClientEvents {
     message: (data: EACH_PROCESSED_MESSAGE) => void;
 
     messageAcknowledgement: (data: MESSAGE_ACKNOWLEDGEMENT) => void;
+
+    undeliveredMessagesCount: (data: UNSEEN_MESSAGES[]) => void;
+    UnseenMessages: (data: UNSEEN_MESSAGES[]) => void;
     // add more if needed
 }

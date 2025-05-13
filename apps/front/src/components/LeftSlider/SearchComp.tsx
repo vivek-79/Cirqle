@@ -17,11 +17,14 @@ const SearchComp = () => {
     //getting user from custom hook
     const user = useStoredUser();
 
+    console.log(user)
     //searching users
     const onSearch = async (name: string) => {
 
+        if(!user || !user.accessToken) return;
         if (name.length > 0) {
-            const foundPersons = await axios.get(`${api}/user/search/${name}`, { withCredentials: true });
+            console.log(name,api)
+            const foundPersons = await axios.get(`${api}/user/search/${name}`, { withCredentials: true ,headers:AccessToken(user.accessToken)});
             setSearchedUsers(foundPersons.data || [])
         }
 
