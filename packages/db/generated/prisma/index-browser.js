@@ -130,7 +130,8 @@ exports.Prisma.UserScalarFieldEnum = {
   gender: 'gender',
   suggestions: 'suggestions',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  lastseen: 'lastseen'
 };
 
 exports.Prisma.NotificationScalarFieldEnum = {
@@ -215,6 +216,13 @@ exports.Prisma.MessageStatusScalarFieldEnum = {
   messageId: 'messageId'
 };
 
+exports.Prisma.ReactionScalarFieldEnum = {
+  id: 'id',
+  emoji: 'emoji',
+  userId: 'userId',
+  messageId: 'messageId'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -259,7 +267,8 @@ exports.Prisma.ModelName = {
   Like: 'Like',
   Chat: 'Chat',
   Message: 'Message',
-  MessageStatus: 'MessageStatus'
+  MessageStatus: 'MessageStatus',
+  Reaction: 'Reaction'
 };
 
 /**

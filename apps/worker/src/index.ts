@@ -87,6 +87,7 @@ type MESSAGE_DTO = {
                     status: res.status,
                     localId: msg.localId,
                     sender:res.sender,
+                    reactions:[]
                 }
             }
 

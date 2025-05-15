@@ -8,11 +8,11 @@ export const MessageStatus = ({ status }: { status?:string})=>{
 
     switch (status) {
         case "SENT":
-            return <IoCheckmarkOutline size={13} className="self-center text-gray-400" />  
+            return <IoCheckmarkOutline size={13} className=" text-gray-400" />  
         case "DELIVERED":
-            return <IoCheckmarkDoneOutline size={13} className="self-center text-gray-300" />
+            return <IoCheckmarkDoneOutline size={13} className=" text-gray-300" />
         case "READ":
-            return <IoCheckmarkDoneOutline size={13} className="self-center text-blue-400" />
+            return <IoCheckmarkDoneOutline size={13} className=" text-blue-400" />
         default:
             return null
     }

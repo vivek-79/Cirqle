@@ -81,6 +81,13 @@ export type UNSEEN_MESSAGES={
     chatId:string,
     senderId:number
 }
+
+export type REACTION_NOTIFICATION={
+    id: string,
+    emoji: string | null,
+    messageId: string,
+    userId:number
+}
 export interface ClientToServerEvents {
     sendMessage: (data: { text: string | null, photo:File | null , chatId: string, senderId:number,localId:number }) => void;
     messageAcknowledge: (data: SEND_ACKNOWLEDGE)=> void;
@@ -96,5 +103,7 @@ export interface ServerToClientEvents {
 
     undeliveredMessagesCount: (data: UNSEEN_MESSAGES[]) => void;
     UnseenMessages: (data: UNSEEN_MESSAGES[]) => void;
+
+    reactionNotification: (data: REACTION_NOTIFICATION)=>void
     // add more if needed
 }

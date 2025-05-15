@@ -16,7 +16,6 @@ const ChatComp = () => {
     const [chatDetails, setChatDetails] = useState<PROCESSED_MESSAGE | null | undefined>(null)
     const user = useStoredUser();
     const params = useParams();
-    const socket = useSocket()
     const chatId = Array.isArray(params.id) ? params.id[0] : params.id
     if (!chatId || !user.id) {
         return;
@@ -41,14 +40,15 @@ const ChatComp = () => {
         }
     }, [chatId?.slice(0, 8)])
 
-    if (!chatDetails) return null;
+    if (!chatDetails) return;
+
     return (
 
         <div className='relative w-full h-dvh flex flex-col overflow-hidden pb-10'>
             {/* Messaging Tool Bar */}
             <ChatBoxHeader
-                name={chatDetails.isGroup ? chatDetails.name : chatDetails.members[1].name}
-                avatar={chatDetails.isGroup ? chatDetails.groupAvatar : chatDetails.members[1].avatar}
+                name={chatDetails.isGroup ? chatDetails.name : chatDetails.members[0].name}
+                avatar={chatDetails.isGroup ? chatDetails.groupAvatar : chatDetails.members[0].avatar}
             />
 
             {/* Chat Box */}

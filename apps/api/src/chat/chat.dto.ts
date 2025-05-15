@@ -74,3 +74,15 @@ export type ACKNOWLEDGE_TO_USER={
     acknowledge:"DELIVERED" | "READ"|"SENT"
     chatId:string
 }
+
+export type REACTION_NOTIFICATION={
+    members:{
+        id:number
+    }[],
+    data:{
+        id:string,
+        emoji:string | null,
+        messageId:string,
+        userId:number
+    }
+}

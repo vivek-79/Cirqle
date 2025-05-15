@@ -1,9 +1,6 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
-import { CreateMessageDto } from './dto/create-message.dto';
-import { UpdateMessageDto } from './dto/update-message.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { ACKNOWLEDGE, PROCESSED_MESSAGE } from 'src/chat/chat.dto';
-import { ac } from '@upstash/redis/zmscore-CjoCv9kz';
+import { ACKNOWLEDGE } from 'src/chat/chat.dto';
 import { messageStatusUpdater } from 'src/chat/messageStatusUpdater';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 
@@ -30,6 +27,13 @@ export class MessagesService {
           createdAt: true,
           updatedAt: true,
           status: true,
+          reactions: {
+            select: {
+              id: true,
+              userId: true,
+              emoji: true
+            }
+          },
           sender: {
             select: {
               name: true,
@@ -88,8 +92,6 @@ export class MessagesService {
         })
 
         const toUpdateStatusIds = await messageStatusUpdater({ tx, members: messages[0].chat.members, messages, acknowledge, userId })
-
-        console.log("toUpdateStatusIds", toUpdateStatusIds)
         return toUpdateStatusIds
       })
 
@@ -109,23 +111,23 @@ export class MessagesService {
   async getUndeliveredMessage(userId: number) {
 
     const res = await this.prisma.message.findMany({
-      where:{
-        status:"SENT",
-        chat:{
-          members:{
-            some:{id:userId}
+      where: {
+        status: "SENT",
+        chat: {
+          members: {
+            some: { id: userId }
           }
         },
-        statuses:{
-          none:{
+        statuses: {
+          none: {
             userId
           }
         },
       },
-      select:{
-        id:true,
-        chatId:true,
-        senderId:true
+      select: {
+        id: true,
+        chatId: true,
+        senderId: true
       }
     })
 
@@ -137,20 +139,20 @@ export class MessagesService {
 
     const res = await this.prisma.message.findMany({
       where: {
-        OR:[
-          {status:"SENT"},
-          {status:"DELIVERED"}
+        OR: [
+          { status: "SENT" },
+          { status: "DELIVERED" }
         ],
         chat: {
           members: {
             some: { id: userId }
           }
         },
-        statuses:{
-          every:{
-            OR:[
-              {userId:{not:userId}},
-              {userId:userId,status:"DELIVERED"}
+        statuses: {
+          every: {
+            OR: [
+              { userId: { not: userId } },
+              { userId: userId, status: "DELIVERED" }
             ]
           },
         },
@@ -163,5 +165,86 @@ export class MessagesService {
     })
 
     return res;
+  }
+
+  //reaction
+  async handleReaction({ messageId, userId, reactionType, reaction, reactionId }: { messageId: string, userId: number, reactionType: "REMOVE" | "ADD", reaction?: string, reactionId?: string }) {
+
+    console.log(messageId,userId,reactionType,reaction,reactionId)
+    let res;
+    try {
+
+      if (reactionType === "ADD" && !reactionId && reaction) {
+        res = await this.prisma.reaction.create({
+          data: {
+            userId,
+            messageId,
+            emoji: reaction,
+          }
+        })
+
+        console.log("create")
+      }
+
+      else if (reactionType === "ADD" && reactionId) {
+        res = await this.prisma.reaction.update({
+          where: {
+            id: reactionId,
+          },
+          data: {
+            emoji: reaction
+          }
+        })
+        console.log("update")
+      }
+      else if (reactionType === "REMOVE" && reactionId) {
+        const result = await this.prisma.reaction.delete({
+          where: {
+            id: reactionId,
+          }
+        })
+
+        res ={
+          id:result.id,
+          messageId:result.messageId,
+          userId:result.userId,
+          emoji:null
+        }
+        console.log("remove")
+      }
+
+      //sending via websocket
+      const data ={
+        id:res.id,
+        messageId:res.messageId,
+        emoji:res.emoji,
+        userId:res.userId
+      }
+
+      //fetching all user in chat
+      const chatMembers = await this.prisma.message.findFirst({
+        where:{
+          id:messageId
+        },
+        select:{
+          chat:{
+            select:{
+              members:{
+                select:{
+                  id:true
+                }
+              }
+            }
+          }
+        }
+      })
+
+      const members = chatMembers?.chat.members;
+
+      this.eventEmmiter.emit("reactionNotification", { members, data })
+    }
+    catch (error) {
+      return new InternalServerErrorException("Server error")
+    }
   }
 }

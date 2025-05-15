@@ -17,7 +17,6 @@ const SearchComp = () => {
     //getting user from custom hook
     const user = useStoredUser();
 
-    console.log(user)
     //searching users
     const onSearch = async (name: string) => {
 

@@ -30,6 +30,13 @@ html,body{
   .modal{
     @apply fixed top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2
   }
+  .absolute-center{
+    @apply absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2
+  }
+
+  .reaction-icon{
+    @apply cursor-pointer hover:scale-3d hover:scale-130 transition-all duration-500
+  }
 }
 
 @font-face{
@@ -62,4 +69,9 @@ html,body{
   100% {
     transform: translateY(-2px);
   }
+}
+
+.auth-page{
+  background-image: url('/auth-bg.webp');
+  background-size: cover;
 }

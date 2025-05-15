@@ -3,7 +3,7 @@
 import React, { ReactNode, useEffect, useRef, useState } from 'react'
 import axios from 'axios'
 import { AccessToken, api } from '@/constants'
-import { useChatStoredData, useLastMessage, useStoredUser, useUnseenMessageActions } from '@/hooks/store.actions'
+import { useLastMessage, useStoredUser, useUnseenMessageActions } from '@/hooks/store.actions'
 import { SiGodaddy } from "react-icons/si";
 import AddNewChatModal from '@/components/chat/AddNewChatModal'
 import { Chat } from '@/types'
@@ -20,8 +20,8 @@ const LayoutComp = ({ children }: { children: ReactNode }) => {
     const openModal = useRef<HTMLDivElement>(null);
     const router = useRouter()
     const lastmessages = useLastMessage();
-    const {currentMessage} = useUnseenMessageActions()
-   
+    const { currentMessage } = useUnseenMessageActions()
+
     //Fetching chat list
     useEffect(() => {
 
@@ -34,9 +34,8 @@ const LayoutComp = ({ children }: { children: ReactNode }) => {
             })
             setChatList(chats.data)
 
-            if(chats.data.length>0){
-
-                chats.data.map((dta: { id: string, lastMessage: StoreMessage })=>(
+            if (chats.data.length > 0) {
+                chats.data.map((dta: { id: string, lastMessage: StoreMessage }) => (
                     currentMessage({ chatId: dta.id, message: dta.lastMessage })
                 ))
             }
@@ -44,6 +43,7 @@ const LayoutComp = ({ children }: { children: ReactNode }) => {
 
     }, [user])
 
+    //closing new chat modal
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (openModal.current && !openModal.current.contains(event.target as Node)) {
@@ -58,8 +58,9 @@ const LayoutComp = ({ children }: { children: ReactNode }) => {
             document.removeEventListener("mousedown", handleClickOutside);
         };
     }, [showAddChatModal]);
+
     if (!user) {
-        return <div>Loading....</div>
+        return;
     }
 
     return (
@@ -69,7 +70,7 @@ const LayoutComp = ({ children }: { children: ReactNode }) => {
             {showAddChatModal && (
                 <div className='fixed inset-0 bg-black/50 z-50' >
                     <div ref={openModal}>
-                        <AddNewChatModal onPress={setShowAddChatModal}/>
+                        <AddNewChatModal onPress={setShowAddChatModal} />
                     </div>
                 </div>
             )}
@@ -84,12 +85,13 @@ const LayoutComp = ({ children }: { children: ReactNode }) => {
                     <button className='text-sm font-bold'>Messages</button>
                     <button className='text-sm font-bold hidden md:block'>Requests</button>
                 </div>
-                {chatList.length > 0 && (
 
+                {/* SHOWING CHAT LIST */}
+                {chatList.length > 0 && (
                     <div className='flex flex-col'>
                         {chatList.map((chat) => (
 
-                            // Stting chat id on Click
+                            // Setting chat id on Click
                             <button onClick={() => {
                                 router.push(`/messages/${chat.id}`)
                             }} key={chat.id} className='w-full h-12 flex flex-row items-center gap-2 px-4 pt-4 max-md:justify-center cursor-pointer'>
@@ -107,11 +109,19 @@ const LayoutComp = ({ children }: { children: ReactNode }) => {
                                     <span className=' font-semibold hidden md:block'>
                                         {chat.name || chat.members?.[0].name}
                                     </span>
-                                    <span className='text-xs text-gray-300 font-semibold'>
-                                        {lastmessages[chat.id] 
-                                        ? lastmessages[chat.id].text || "Hii"
-                                        :''
-                                        }
+
+                                    {/* NEW MESSAGE INDICATOR */}
+                                    <span className='text-xs font-semibold'>
+                                        {lastmessages[chat?.id] && (
+                                            <>
+                                                <span className={`max-md:hidden ${lastmessages[chat?.id].seen ? 'text-gray-400' : 'text-white'}`}>{lastmessages?.[chat.id]?.text}</span>
+                                                
+                                                {/* SMALL SCREEN MESSAGE INDICATOR */}
+                                                {!lastmessages[chat?.id].seen && (
+                                                    <span className='md:hidden block min-w-[10px] min-h-[10px] rounded-full bg-white'></span>
+                                                )}
+                                            </>
+                                        )}
                                     </span>
                                 </span>
                             </button>

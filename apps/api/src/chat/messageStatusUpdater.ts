@@ -46,7 +46,7 @@ export const messageStatusUpdater = async ({
                     return [...new Set(message.statuses.filter(s => s.userId !== userId).map(s => s.userId))];
                 }
                 if (acknowledge == "READ") {
-                    return [...new Set(message.statuses.filter(s => s.userId !== userId && s.status === "DELIVERED").map(s => s.userId))];
+                    return [...new Set(message.statuses.filter(s => s.userId !== userId && s.status === "READ").map(s => s.userId))];
                 }
             }
 
@@ -68,6 +68,8 @@ export const messageStatusUpdater = async ({
         if (idsToUpdate.length === 0 && isLastUserMessageIds.length === 0) {
             return [];
         }
+
+
         if (idsToUpdate.length > 0 && acknowledge !== "READ") {
             await tx.messageStatus.createMany({
                 data: idsToUpdate.map(id => ({
@@ -78,6 +80,20 @@ export const messageStatusUpdater = async ({
             });
         }
 
+        //if read status
+        if(acknowledge ==="READ"){
+            await tx.messageStatus.updateMany({
+                where:{
+                    messageId:{
+                        in: idsToUpdate
+                    }
+                },
+                data:{
+                    status:"READ"
+                }
+            })
+        }
+        
         if (isLastUserMessageIds.length > 0) {
             const updatedMessages = await tx.message.updateMany({
                 where: { id: { in: isLastUserMessageIds } },

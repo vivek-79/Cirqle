@@ -85,7 +85,7 @@ export class ChatService {
                     }
 
                     const statuses = lastMessage.statuses || [];
-                    const isSeen = statuses.some((sts) => (sts.status === "DELIVERED" && sts.userId == id))
+                    const isSeen = statuses.some((sts) => (sts.status === "READ" && sts.userId === id))
 
                     return {
                         ...chat,
@@ -143,8 +143,6 @@ export class ChatService {
 
         try {
 
-            console.log("fetcher", userId)
-
             // let updatedStatusIds: { id: string; senderId: number }[] = [];
             const chatDetail = await this.prisma.$transaction(async (tx) => {
 
@@ -173,6 +171,13 @@ export class ChatService {
                                 createdAt: true,
                                 updatedAt: true,
                                 status: true,
+                                reactions:{
+                                    select:{
+                                        id:true,
+                                        userId:true,
+                                        emoji:true
+                                    }
+                                },
                                 statuses: {
                                     select: {
                                         id: true,
@@ -224,7 +229,12 @@ export class ChatService {
                 );
             }
 
-            return chatDetail.fetchedChat;
+            //removing user from members
+            const mofifieddata = {
+                ...chatDetail.fetchedChat,
+                members:chatDetail.fetchedChat?.members.filter((mem)=>mem.id !==userId)
+            }
+            return mofifieddata;
             // Step 4: Return chat details
         } catch (error) {
 

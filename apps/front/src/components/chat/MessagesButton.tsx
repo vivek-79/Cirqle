@@ -6,7 +6,7 @@ import { useSocket } from "@/hooks/webSocket";
 import { useEffect } from "react";
 import { TbMessageCircleBolt } from "react-icons/tb";
 import StoreProviderWrapper from "../Store-layouts/StoreProviderWrapper";
-import { newMessageSound } from "@/helpers/sounds";
+import { newMessageSound, SOUND_TYPE } from "@/helpers/sounds";
 import { UNSEEN_MESSAGES } from "@/types";
 import { usePathname } from "next/navigation";
 type Message = { id: string; chatId: string };
@@ -19,6 +19,12 @@ const MessagesButton = () => {
     const user = useStoredUser();
     const unseenMessageCount = useGetUnseenMessageCount()
     const { addMessage ,currentMessage} = useUnseenMessageActions()
+    
+    //return if no user
+    if(!user || !user.id) {
+        return;
+    }
+
     const userId = user.id;
 
 
@@ -39,11 +45,11 @@ const MessagesButton = () => {
 
                 //update last message
                 const modifiedMesssage ={
-                    id:data.id,
+                    id:data.messages.id,
                     photo:data.messages.photo,
                     text:data.messages.text,
                     createdAt:data.messages.createdAt,
-                    seen:false
+                    seen: data.messages.sender.id === userId
                 }
                 currentMessage({ chatId: data.id, message: modifiedMesssage })
 
@@ -63,7 +69,7 @@ const MessagesButton = () => {
                 }
 
                 //sound of message
-                newMessageSound()
+                newMessageSound({type:SOUND_TYPE.MESSAGE})
             })
 
             return () => {
@@ -142,7 +148,7 @@ const MessagesButton = () => {
                 return acc;
             }, {} as Record<string, string[]>);
 
-          
+
             if (groupedMessage) {
 
                 Object.entries(groupedMessage).map(([chatId, messageIds]) => {

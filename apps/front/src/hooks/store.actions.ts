@@ -1,5 +1,5 @@
 import { RootState } from "@/store/store";
-import { addMessages, removeMessages, StoreMessage, updateLastMessage } from "@/store/unseenMessage.slice";
+import { addMessages, markLastmessageSeen, removeMessages, StoreMessage, updateLastMessage } from "@/store/unseenMessage.slice";
 import { User } from "@/types";
 import { useDispatch, useSelector } from "react-redux";
 
@@ -29,7 +29,9 @@ export const useUnseenMessageActions = () => {
         dispatch(updateLastMessage({ chatId, message }))
     }
 
-
-    return { addMessage, removeMessage, currentMessage }
+    const markSeenLastMessage = ({ chatId, messageId }: { chatId: string, messageId:string})=>{
+        dispatch(markLastmessageSeen({ chatId, messageId }))
+    }
+    return { addMessage, removeMessage, currentMessage, markSeenLastMessage }
 }
 

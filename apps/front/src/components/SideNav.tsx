@@ -16,6 +16,8 @@ import { toast } from 'sonner'
 import { Riple } from "react-loading-indicators"
 import CreatePost from './CreatePost'
 import MessagesButton from './chat/MessagesButton'
+import { signOut } from 'next-auth/react'
+import { PiSignOut } from "react-icons/pi";
 
 
 
@@ -144,6 +146,11 @@ const SideNav = () => {
                             )}
                         </li>
                     ))}
+
+                    {/* LOGOUT BTN */}
+                    <li className='hidden md:block items-center hover-black'>
+                        <button className='cursor-pointer' onClick={()=>signOut({callbackUrl:'/signin'})}><PiSignOut size={26} /></button>
+                    </li>
                 </ul>
             </div>
 

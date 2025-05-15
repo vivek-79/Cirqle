@@ -60,11 +60,27 @@ const unseenMessagesSlice = createSlice({
         updateLastMessage: (state, action: PayloadAction<{ chatId: string, message: StoreMessage }>)=>{
 
             const {chatId,message} = action.payload;
-            state.lastMessage[chatId] =message
+            state.lastMessage[chatId] =message;
+
+        },
+        markLastmessageSeen:(state,action:PayloadAction<{chatId:string,messageId:string}>)=>{
+
+            const { chatId, messageId } = action.payload;
+            console.log("there is 1")
+            console.log("storing =>", JSON.parse(JSON.stringify(state.lastMessage)));
+            
+            if (state.lastMessage[chatId] &&state.lastMessage[chatId].id !=messageId) return;
+            console.log("there is 2")
+            
+            state.lastMessage[chatId] ={
+                ...state.lastMessage[chatId],
+                seen:true
+            }
+            console.log("storing =>", JSON.parse(JSON.stringify(state.lastMessage)));
         }
     }
 })
 
 
-export const { addMessages, removeMessages ,updateLastMessage} = unseenMessagesSlice.actions;
+export const { addMessages, removeMessages, updateLastMessage, markLastmessageSeen } = unseenMessagesSlice.actions;
 export default unseenMessagesSlice.reducer;

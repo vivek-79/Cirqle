@@ -44,12 +44,10 @@ const MessageInput = ({ chatId, userId }: { chatId: string, userId: number }) =>
         const value = textareaRef.current.value;
         textareaRef.current.value = ""; // Clear the textarea
 
+        const localId = Date.now();
         try {
 
             //saving message to local storage
-
-            const localId = Date.now();
-
             if (localMessageContext) {
 
                 localMessageContext.addMessage({
@@ -59,10 +57,8 @@ const MessageInput = ({ chatId, userId }: { chatId: string, userId: number }) =>
                     localId,
                 });
             }
-
-
+            
             // Emit the message to the server
-
             socket.emit("sendMessage", {
                 text: value,
                 photo: null,
@@ -70,8 +66,6 @@ const MessageInput = ({ chatId, userId }: { chatId: string, userId: number }) =>
                 senderId: userId,
                 localId,
             });
-
-            console.log("sent")
 
             handleInput();
         } catch (error) {
@@ -108,22 +102,27 @@ const MessageInput = ({ chatId, userId }: { chatId: string, userId: number }) =>
 
                     console.log("✅ Offline messages resent");
 
-                    const handleOnline = () => {
-                        if (socket) {
-                            retrySendingMessages();
-                        }
-                    };
-
-
-                    window.addEventListener("online", handleOnline);
-                    return () => {
-                        window.removeEventListener("online", handleOnline);
-                    }
+                   
 
                 } catch (error) {
                     console.error("Error sending offline messages");
                 }
             }
+        }
+
+        //intentionally calling once
+        retrySendingMessages();
+
+        //attaching yo event listener
+        const handleOnline = () => {
+            if (socket) {
+                retrySendingMessages();
+            }
+        };
+
+        window.addEventListener("online", handleOnline);
+        return () => {
+            window.removeEventListener("online", handleOnline);
         }
     }, [socket]);
 

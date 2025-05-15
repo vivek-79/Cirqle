@@ -7,5 +7,9 @@ export const CloudImage = (public_id: string | null | undefined) => {
     if(!public_id){
         return "/person.webp"
     }
+
+    else if (public_id.startsWith('https://lh3.googleusercontent.com')){
+        return public_id
+    }
     return (`${imageBaseUrl}/${public_id}.jpg`)
 }

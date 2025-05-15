@@ -18,7 +18,7 @@ const ChatBoxHeader = ({ avatar, isOnline, lastOnline, name }: Props) => {
             <div className='h-full w-full flex flex-row items-center justify-between '>
                 <button className='w-full flex flex-row items-center gap-2'>
                     <Image
-                        src={CloudImage(avatar) || "/person.webp"}
+                        src={CloudImage(avatar)}
                         height={10}
                         width={10}
                         alt={name || "user pic"}

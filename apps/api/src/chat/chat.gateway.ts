@@ -1,7 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit, SubscribeMessage, WebSocketGateway, WebSocketServer } from "@nestjs/websockets";
 import { Server, Socket } from "socket.io";
-import { ACKNOWLEDGE, ACKNOWLEDGE_TO_USER, PROCESSED_MESSAGE, SEND_MESSAGE } from "./chat.dto";
+import { ACKNOWLEDGE, ACKNOWLEDGE_TO_USER, PROCESSED_MESSAGE, REACTION_NOTIFICATION, SEND_MESSAGE } from "./chat.dto";
 import { verify } from 'jsonwebtoken';
 import { rpushMessage } from '@repo/redis'
 import { redis } from "src/lib/redisSetup";
@@ -78,6 +78,7 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection {
     await this.messageService.acknowledgeMessages(data)
   }
 
+  //get request for undelivered messages
   @SubscribeMessage("getUndeliveredMessagesCount")
   async getUnseenMessageCount(client:any,data:{userId:number}){
 
@@ -87,6 +88,7 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection {
     this.io.to(socketId).emit("undeliveredMessagesCount",res)
   }
 
+  //get request for unseen messages
   @SubscribeMessage("getUnseenMessages")
   async getUnseenMessage(client:any,data:{userId:number}){
 
@@ -118,6 +120,20 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection {
     })))
   }
 
+  //sending message reaction
+  @OnEvent("reactionNotification", { async: true })
+  async handleReactionNotification(data: REACTION_NOTIFICATION){
+
+    await Promise.all((data.members.map(async(member)=>{
+
+      const socketId = await redis.get(`socket:${member.id}`) as string;
+
+      if(!socketId) return;
+
+      this.io.to(socketId).emit("reactionNotification", data.data);
+
+    })))
+  }
   // Send message to user
   async sendMessageBackToUser(message: PROCESSED_MESSAGE) {
 

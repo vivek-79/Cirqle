@@ -15,17 +15,19 @@ datasource db {
 }
 
 model User {
-  id          Int      @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   name        String
   email       String
   bio         String?
   avatar      String?
   password    String
-  gender      String   @default("Male")
-  suggestions Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  gender      String    @default("Male")
+  suggestions Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  lastseen    DateTime?
 
+  reactions             Reaction[]
   messagesStatuses      MessageStatus[]
   sentNotification      Notification[]   @relation("SentNotifications")
   receivedNotifications Notification[]   @relation("ReceivedNotifications")
@@ -119,13 +121,14 @@ model Like {
 }
 
 model Chat {
-  id            String   @id @default(uuid())
-  isGroup       Boolean  @default(false)
-  name          String?
-  groupAvatar   String?
-  createdAt     DateTime @default(now())
-  lastMessage   String?
-  lastMessageAt DateTime @default(now())
+  id          String   @id @default(uuid())
+  isGroup     Boolean  @default(false)
+  name        String?
+  groupAvatar String?
+  createdAt   DateTime @default(now())
+
+  lastMessageId String?  @unique
+  lastMessage   Message? @relation("LastMesssageRelation", fields: [lastMessageId], references: [id], onDelete: Cascade)
 
   members  User[]    @relation("chatMembers")
   messages Message[]
@@ -139,12 +142,15 @@ model Message {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  status   Status          @default(SENT)
-  statuses MessageStatus[]
-  chatId   String
-  chat     Chat            @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  senderId Int
-  sender   User            @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  reactions Reaction[]
+  status    Status          @default(SENT)
+  statuses  MessageStatus[]
+  chatId    String
+  chat      Chat            @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  senderId  Int
+  sender    User            @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  lastMessageInChat Chat? @relation("LastMesssageRelation")
 }
 
 model MessageStatus {
@@ -159,6 +165,19 @@ model MessageStatus {
   message   Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
 
   @@unique([userId, messageId]) // ensures one status per user-message pair
+}
+
+model Reaction {
+  id    String @id @default(uuid())
+  emoji String // e.g. "❤️", "😂", "🔥"
+
+  userId    Int
+  messageId String
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, messageId, emoji]) // optional: prevent duplicate reactions
 }
 
 enum Status {

@@ -6,16 +6,17 @@ import React, { useContext, useEffect, useLayoutEffect, useRef, useState } from 
 import { toast } from 'sonner'
 import { ClipLoader } from 'react-spinners'
 import { GoChevronDown } from "react-icons/go";
-import { newMessageSound } from '@/helpers/sounds'
+import { newMessageSound, SOUND_TYPE } from '@/helpers/sounds'
 import { getTimeForMessage } from '@/helpers/timeConverter'
 import { LocalStorageMessage, MessageContext } from '@/context/MessageContext'
 import { CiClock2 } from "react-icons/ci";
 import { CiRedo } from "react-icons/ci";
 import { MESSAGE_ACKNOWLEDGEMENT } from '@/types'
 import { MessageStatus } from '@/helpers/MessageStatus'
-import {useSocket} from '@/hooks/webSocket'
+import { useSocket } from '@/hooks/webSocket'
 import { useUnseenMessageActions } from '@/hooks/store.actions'
 import { usePathname } from 'next/navigation'
+import ReactionComp, { REACTION } from './ReactionComp'
 
 interface ChatProps {
     chatId?: string | null,
@@ -35,6 +36,7 @@ export type MESSAGE = {
     photo: string | null
     createdAt: Date
     updatedAt: Date
+    reactions:REACTION[] | []
     id: string
     seenBy: CHAT_MEMBERS[]
     sender: CHAT_MEMBERS
@@ -47,7 +49,6 @@ export type PROCESSED_MESSAGE = {
     name?: string
     groupAvatar?: string | null
     members: CHAT_MEMBERS[]
-
     messages: MESSAGE[]
 }
 
@@ -69,7 +70,7 @@ const ChatBox = ({ chatId, userId, accessToken, data }: ChatProps) => {
     //getting messages context
     const localMessageContext = useContext(MessageContext);
     const socket = useSocket();
-    const { removeMessage , currentMessage} = useUnseenMessageActions()
+    const { removeMessage, currentMessage, markSeenLastMessage } = useUnseenMessageActions()
     const containerRef = useRef<HTMLUListElement | null>(null)
     const [chatInfo, setChatInfo] = useState<PROCESSED_MESSAGE | null | undefined>(data);
     const [hasScrolled, setHasScrolled] = useState<boolean>();
@@ -80,12 +81,14 @@ const ChatBox = ({ chatId, userId, accessToken, data }: ChatProps) => {
     const [retryingMessageId, setRetryingMessageId] = useState<number | null>(null);
     const seenMessageRefs = useRef<Record<string, HTMLLIElement | null>>({});
     const newlySeenMessageRefs = useRef<string[]>([]);
+    const [activeMessageId, setActiveMessageId] = useState<string | null>(null);
     const pageRef = useRef(2);
     const pathname = usePathname()
 
-    //removing from unseen
+
 
     //fetching real-time messages
+    //real time reaction-notiification
     useEffect(() => {
 
         if (!socket || !pathname.endsWith(chatId)) return;
@@ -94,33 +97,22 @@ const ChatBox = ({ chatId, userId, accessToken, data }: ChatProps) => {
             //getting messages from local storage
             const localMessage = localMessageContext?.messages?.filter((message) => message.chatId === chatId);
 
+            //Message from server
             socket.on("message", (data) => {
 
                 if (!data || !data.messages) return;
 
-                setChatInfo((prev) => {
-
-                    if (!prev) return {
-                        id: data.id,
-                        members: data.members,
-                        messages: [data.messages]
-                    }
-
-                    return {
-                        ...prev,
-                        messages: [data.messages, ...prev.messages],
-                    }
-                })
-
                 //setting to current
                 const modifiedMesssage = {
-                    id: data.id,
+                    id: data.messages.id,
                     photo: data.messages.photo,
                     text: data.messages.text,
                     createdAt: data.messages.createdAt,
-                    seen: false
+                    seen: data.messages.sender.id === userId
                 }
                 currentMessage({ chatId: data.id, message: modifiedMesssage })
+
+
 
                 //sending acknowledgement to server
                 const isSameSender = data.messages?.sender.id == userId;
@@ -136,9 +128,7 @@ const ChatBox = ({ chatId, userId, accessToken, data }: ChatProps) => {
                     })
                 }
 
-                //filtering out messageIds from other users
-
-                //clearing local storage messages if same message is received
+                // //clearing local storage messages if same message is received
                 if (localMessageContext && localMessage && localMessage?.length > 0) {
 
                     localMessageContext.clearMessages(data.messages?.localId)
@@ -149,19 +139,75 @@ const ChatBox = ({ chatId, userId, accessToken, data }: ChatProps) => {
                     }
                 }
 
+                if (data.id !== chatId) return;
+                setChatInfo((prev) => {
+
+                    if (!prev) return {
+                        id: data.id,
+                        members: data.members,
+                        messages: [data.messages]
+                    }
+
+                    return {
+                        ...prev,
+                        messages: [data.messages, ...prev.messages],
+                    }
+                })
+
                 //sound of message
-                newMessageSound()
+                newMessageSound({type:SOUND_TYPE.MESSAGE})
+            });
+
+            //Reaction from server
+            socket.on("reactionNotification", (data) => {
+
+                if (!data) return;
+
+                setChatInfo((prev)=>{
+
+                    if(!prev || !prev.messages) return null;
+
+                    
+                    return {
+
+                        ...prev,
+
+                         messages:prev.messages.map((msg)=>{
+
+                            if(msg.id !== data.messageId) return msg;
+
+                            const updatedReaction = msg.reactions.filter((rx)=>rx.userId !== data.userId);
+
+                            if(!data.emoji){
+
+                                return {
+                                    ...msg,
+                                    reactions:updatedReaction
+                                }
+                            }
+
+                            return {
+                                ...msg,
+                                reactions:[...updatedReaction,data]
+                            }
+                        })
+    
+                    }
+                })
+                //sound of message
+                newMessageSound({type:SOUND_TYPE.REACTION})
             })
 
             return () => {
                 socket.off("connect");
                 socket.off("message");
+                socket.off("reactionNotification");
             }
         } catch (error) {
 
             console.log("Error while getting and sending message ack", error)
         }
-    }, [socket, retryingMessageId, chatId, localMessageContext,pathname])
+    }, [socket, retryingMessageId, chatId, localMessageContext, pathname])
 
     //Received acknowledgement of message
     useEffect(() => {
@@ -315,6 +361,118 @@ const ChatBox = ({ chatId, userId, accessToken, data }: ChatProps) => {
 
     }, [hasScrolled])
 
+    
+    //move to bottom
+    const moveToBottom = () => {
+        
+        const container = containerRef.current;
+        if (!container) return;
+        
+        container.scroll({
+            top: container.scrollHeight,
+            behavior: "smooth"
+        })
+    }
+
+    //retry sending from localStorage
+    //not using currently as default auto retry is on
+    const retrySending = (message: LocalStorageMessage) => {
+        
+        if (!socket || !message.text) return;
+        
+        setRetryingMessageId(message.localId);
+        
+        try {
+            // Emit the message to the server
+            
+            socket.emit("sendMessage", {
+                text: message.text,
+                photo: message.photo || null,
+                chatId,
+                senderId: userId,
+                localId: message.localId
+            });
+            
+            
+            setTimeout(() => {
+                setRetryingMessageId((current) => {
+                    if (current === message.localId) {
+                        return null;
+                    }
+                    return current;
+                });
+            }, 2000)
+            
+        } catch (error) {
+            console.log("Error while sendind message")
+        }
+    }
+    
+    //sending seen message acknowledgement
+    useEffect(() => {
+        
+        if (!socket || !chatInfo) return;
+        
+        const oberserver = new IntersectionObserver((entries) => {
+            
+            const visibleMessageIds = entries
+            .filter(entry => entry.isIntersecting)
+            .map(entry => entry.target.getAttribute('data-id'));
+            
+            const seenMessages = visibleMessageIds.filter(Boolean) as string[];
+            const newSeenMessages = seenMessages.filter((messageId) => !newlySeenMessageRefs.current.includes(messageId))
+            newlySeenMessageRefs.current = [...newlySeenMessageRefs.current, ...newSeenMessages];
+            
+            if (newSeenMessages.length > 0) {
+                socket.emit("messageAcknowledge", {
+                    messageIds: newSeenMessages,
+                    chatId,
+                    userId,
+                    acknowledge: "READ"
+                })
+                
+                //updating store
+                removeMessage({ chatId, messageIds: newSeenMessages })
+                
+                //updating last message
+                const messageId = newSeenMessages[newSeenMessages.length - 1];
+                markSeenLastMessage({ chatId, messageId })
+                console.log("seen mark=>", messageId, chatId)
+            }
+        }, {
+            root: containerRef.current,
+            threshold: 0.6,
+        });
+        
+        Object.entries(seenMessageRefs.current).forEach(([id, el]) => {
+            
+            if (el) {
+                el.setAttribute('data-id', id);
+                oberserver.observe(el);
+            }
+        });
+        
+        return () => oberserver.disconnect();
+    }, [socket, chatInfo])
+    
+    //editing sent message
+    const handleMessageClick = (e: React.MouseEvent<HTMLUListElement>) => {
+        const li = (e.target as HTMLElement).closest("li[data-message-id]");
+        if (!li) {
+            
+            if(activeMessageId){
+                setActiveMessageId(null)
+            }
+            return;
+        }; // Not a message element
+        
+        const messageId = li.getAttribute("data-message-id");
+        if (messageId) {
+            setActiveMessageId(messageId);
+            // perform your logic here (e.g. open reactions, show details, etc.)
+        }
+    };
+
     //skeleton loader
     if (!chatInfo) {
         return <ul
@@ -330,94 +488,7 @@ const ChatBox = ({ chatId, userId, accessToken, data }: ChatProps) => {
             ))}
         </ul>
     }
-
-    //move to bottom
-    const moveToBottom = () => {
-
-        const container = containerRef.current;
-        if (!container) return;
-
-        container.scroll({
-            top: container.scrollHeight,
-            behavior: "smooth"
-        })
-    }
-
-    //retry sending from localStorage
-    const retrySending = (message: LocalStorageMessage) => {
-
-        if (!socket || !message.text) return;
-
-        setRetryingMessageId(message.localId);
-
-        try {
-            // Emit the message to the server
-
-            socket.emit("sendMessage", {
-                text: message.text,
-                photo: message.photo || null,
-                chatId,
-                senderId: userId,
-                localId: message.localId
-            });
-
-
-            setTimeout(() => {
-                setRetryingMessageId((current) => {
-                    if (current === message.localId) {
-                        return null;
-                    }
-                    return current;
-                });
-            }, 2000)
-
-        } catch (error) {
-            console.log("Error while sendind message")
-        }
-    }
-
-    //sending seen message acknowledgement
-    useEffect(() => {
-
-        if (!socket || !chatInfo) return;
-
-        const oberserver = new IntersectionObserver((entries) => {
-
-            const visibleMessageIds = entries
-                .filter(entry => entry.isIntersecting)
-                .map(entry => entry.target.getAttribute('data-id'));
-
-            const seenMessages = visibleMessageIds.filter(Boolean) as string[];
-            const newSeenMessages =seenMessages.filter((messageId)=> !newlySeenMessageRefs.current.includes(messageId))
-            newlySeenMessageRefs.current = [...newlySeenMessageRefs.current, ...newSeenMessages];
-
-            if (newSeenMessages.length > 0) {
-                socket.emit("messageAcknowledge", {
-                    messageIds: newSeenMessages,
-                    chatId,
-                    userId,
-                    acknowledge: "READ"
-                })
-
-                //updating store
-                removeMessage({chatId,messageIds:newSeenMessages})
-            }
-        }, {
-            root: containerRef.current,
-            threshold: 0.6,
-        });
-
-        Object.entries(seenMessageRefs.current).forEach(([id, el]) => {
-
-            if (el) {
-                el.setAttribute('data-id', id);
-                oberserver.observe(el);
-            }
-        });
-
-        return () => oberserver.disconnect();
-    }, [socket, chatInfo])
-
+    
     return (
         <div
 
@@ -425,17 +496,18 @@ const ChatBox = ({ chatId, userId, accessToken, data }: ChatProps) => {
 
             <ul
                 ref={containerRef}
-                className='flex max-h-full overflow-y-auto flex-col-reverse gap-1 w-full px-3 py-2 max-md:pb-8'>
+                onClick={handleMessageClick}
+                id='message-list'
+                className='flex max-h-full overflow-y-auto flex-col-reverse gap-3 w-full px-3 py-2 max-md:pb-8'>
                 {(chatInfo && chatInfo.messages?.length > 0) && (
                     <>
                         {/* Local storage messages */}
                         {
                             localMessageContext?.messages?.map((message) => (
                                 <li
-                                    key={message.localId} className='relative self-end justify-end bg-gray-700 flex-row  px-2 py-1 rounded-lg  max-w-[60%] flex gap-1 items-end'>
-                                    <button disabled={retryingMessageId === message.localId} onClick={() => retrySending(message)} className={`absolute -left-5 cursor-pointer hover-black ${retryingMessageId === message.localId ? 'animate-spin duration-300' : ''}`}><CiRedo size={20} /></button>
+                                    key={message.localId} className='relative flex items-end self-end justify-end bg-gray-700 px-2 py-1 rounded-lg  max-w-[60%] text-white'>
                                     <span className={`${message.senderId !== userId ? '' : ''}  rounded-lg w-full break-words`}>{message.text}</span>
-                                    <span className='text-[10px] text-gray-400'><CiClock2 /></span>
+                                    <span className='text-[10px] text-gray-400 ml-1'><CiClock2 /></span>
                                 </li>
                             ))
                         }
@@ -446,12 +518,35 @@ const ChatBox = ({ chatId, userId, accessToken, data }: ChatProps) => {
 
                                 <li
                                     ref={(el) => { (message.sender.id !== userId && message.status !== "READ") ? seenMessageRefs.current[message.id] = el : null }}
-                                    key={message.id} className={`${message.sender?.id !== userId ? 'self-start justify-start bg-white/20' : 'self-end justify-end bg-gray-700 '} flex-row  px-2 py-1 rounded-lg  max-w-[60%] bg-black flex gap-1 items-end`}>
-                                    <span className={`${message.sender?.id !== userId ? '' : ''}  rounded-lg w-full break-words`}>{message.text}</span>
-                                    <span className='text-[10px] flex gap-1 flex-row'>
-                                        <span className=' text-gray-400'>{getTimeForMessage({ date: message.createdAt })}</span>
-                                        <span>{message.sender?.id === userId && <MessageStatus status={message.status} />}</span>
+                                    data-message-id={message.id}
+                                    key={message.id} className={`${message.sender?.id !== userId ? 'self-start justify-start bg-white/20' : 'self-end justify-end bg-gray-700 '} ${message.reactions.length >0 && 'mb-2'} relative px-2 py-1 rounded-lg  max-w-[60%] bg-black text-white cursor-pointer `}>
+
+                                    <span className=' break-words block leading-snug min-w-full'>
+                                        {message.text}
+
+                                        <span style={{ marginTop: 10 }} className=' text-gray-400 flex flex-row gap-0.5 text-[10px] float-right ml-1'>
+                                            {getTimeForMessage({ date: message.createdAt })}
+                                            {message.sender?.id === userId && <MessageStatus status={message.status} />}
+                                        </span>
                                     </span>
+
+                                    {/* Reactions */}
+                                    {message.reactions.length>0 && (
+
+                                        <button className={`absolute -bottom-4 ${userId === message.sender.id ? 'right-2' : 'left-2'} bg-white/20 backdrop-blur-md  rounded-xl`}>
+                                            {message.reactions.map((rsx) => (
+
+                                                <span key={rsx.id}>{rsx.emoji}</span>
+                                            ))}
+                                        </button>
+                                    )}
+
+                                    {/* REACTION COMP */}
+                                    {activeMessageId === message.id && (
+                                        <div className={`${userId === message.sender.id ? 'right-0' : 'left-0'} absolute -bottom-8`}>
+                                            <ReactionComp messageId={message.id} reaction={message.reactions} func={setActiveMessageId}/>
+                                        </div>
+                                    )}
                                 </li>
                             ))
                         }
