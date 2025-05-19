@@ -1,6 +1,6 @@
 import { CloudImage } from '@/helpers/getFullImageUrl';
 import { AccessToken, api, path } from '@/constants';
-import { useStoredUser } from '@/hooks/store.actions'
+import { useStoredUser, useUnseenMessageActions } from '@/hooks/store.actions'
 import axios from 'axios';
 import Image from 'next/image';
 import React, { SetStateAction, useEffect, useState } from 'react'
@@ -16,14 +16,14 @@ type DisplayUsers = {
 
 
 //used in messages/layoutComp
-const AddNewChatModal = ({onPress}:{onPress:React.Dispatch<SetStateAction<boolean>>}) => {
+const AddNewChatModal = () => {
 
     const user = useStoredUser();
     const [searchedText, setSearchedText] = useState<string>('');
     const [debouncedvalue, setDebouncedValue] = useState<string>('');
     const [displayedUsers, setDisplayedUsers] = useState<DisplayUsers[]>([])
     const router = useRouter()
-    const [newChat, setNewChat] = useState()
+    const {closeChatsModel} = useUnseenMessageActions()
 
 
     useEffect(() => {
@@ -83,7 +83,7 @@ const AddNewChatModal = ({onPress}:{onPress:React.Dispatch<SetStateAction<boolea
 
             if(res.data){
                 router.push(`${path}/messages/${res.data}`);
-                onPress(false);
+                closeChatsModel();
             }
         } catch (error) {
             toast.error("Server error try again.")

@@ -1,7 +1,7 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ChatGateway } from 'src/chat/chat.gateway';
 import { subscribeChannel } from "@repo/redis"
-import { PROCESSED_MESSAGE } from 'src/chat/chat.dto';
+import { PROCESSED_MESSAGE } from '@repo/dto';
 
 @Injectable()
 export class RedisSubscriberService implements OnModuleInit {

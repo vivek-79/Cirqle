@@ -13,3 +13,10 @@ export const CloudImage = (public_id: string | null | undefined) => {
     }
     return (`${imageBaseUrl}/${public_id}.jpg`)
 }
+
+export const LocalImage =(file:File )=>{
+
+    const url = URL.createObjectURL(file);
+
+    return url;
+}

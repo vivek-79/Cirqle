@@ -17,6 +17,9 @@ import { useSocket } from '@/hooks/webSocket'
 import { useUnseenMessageActions } from '@/hooks/store.actions'
 import { usePathname } from 'next/navigation'
 import ReactionComp, { REACTION } from './ReactionComp'
+import Image from 'next/image'
+import { CloudImage, LocalImage } from '@/helpers/getFullImageUrl'
+import { PROCESSED_MESSAGE } from "@repo/dto"
 
 interface ChatProps {
     chatId?: string | null,
@@ -36,20 +39,12 @@ export type MESSAGE = {
     photo: string | null
     createdAt: Date
     updatedAt: Date
-    reactions:REACTION[] | []
+    reactions: REACTION[] | []
     id: string
     seenBy: CHAT_MEMBERS[]
     sender: CHAT_MEMBERS
     localId?: number,
     status?: "SENT" | "DELIVERED" | "READ"
-}
-export type PROCESSED_MESSAGE = {
-    id: string,
-    isGroup?: boolean
-    name?: string
-    groupAvatar?: string | null
-    members: CHAT_MEMBERS[]
-    messages: MESSAGE[]
 }
 
 export type localStorageMessage = {
@@ -70,7 +65,7 @@ const ChatBox = ({ chatId, userId, accessToken, data }: ChatProps) => {
     //getting messages context
     const localMessageContext = useContext(MessageContext);
     const socket = useSocket();
-    const { removeMessage, currentMessage, markSeenLastMessage } = useUnseenMessageActions()
+    const { clearReplyingMessage, removeMessage, currentMessage, markSeenLastMessage } = useUnseenMessageActions()
     const containerRef = useRef<HTMLUListElement | null>(null)
     const [chatInfo, setChatInfo] = useState<PROCESSED_MESSAGE | null | undefined>(data);
     const [hasScrolled, setHasScrolled] = useState<boolean>();
@@ -83,7 +78,8 @@ const ChatBox = ({ chatId, userId, accessToken, data }: ChatProps) => {
     const newlySeenMessageRefs = useRef<string[]>([]);
     const [activeMessageId, setActiveMessageId] = useState<string | null>(null);
     const pageRef = useRef(2);
-    const pathname = usePathname()
+    const pathname = usePathname();
+    const reactionCompPositionRef = useRef<string>("")
 
 
 
@@ -99,29 +95,36 @@ const ChatBox = ({ chatId, userId, accessToken, data }: ChatProps) => {
 
             //Message from server
             socket.on("message", (data) => {
-
+                console.log(data)
                 if (!data || !data.messages) return;
 
+                const message = data.messages[0];
+                console.log(data.messages)
+
+                console.dir(message, { depth: null })
+
+                if (!message) return;
                 //setting to current
                 const modifiedMesssage = {
-                    id: data.messages.id,
-                    photo: data.messages.photo,
-                    text: data.messages.text,
-                    createdAt: data.messages.createdAt,
-                    seen: data.messages.sender.id === userId
+                    id: message.id,
+                    photo: message.photo,
+                    text: message.text,
+                    createdAt: message.createdAt,
+                    seen: message.sender.id === userId,
+                    replyTo: message.replyTo
                 }
+
                 currentMessage({ chatId: data.id, message: modifiedMesssage })
 
 
-
                 //sending acknowledgement to server
-                const isSameSender = data.messages?.sender.id == userId;
+                const isSameSender = message.sender.id == userId;
 
                 if (!isSameSender) {
 
                     socket.emit("messageAcknowledge", {
 
-                        messageIds: [data.messages.id],
+                        messageIds: [message.id],
                         chatId: data.id,
                         userId,
                         acknowledge: "DELIVERED"
@@ -131,8 +134,14 @@ const ChatBox = ({ chatId, userId, accessToken, data }: ChatProps) => {
                 // //clearing local storage messages if same message is received
                 if (localMessageContext && localMessage && localMessage?.length > 0) {
 
-                    localMessageContext.clearMessages(data.messages?.localId)
-                    const isRetriedMessage = retryingMessageId === data.messages?.localId;
+                    if (message.photo) {
+                        localMessageContext.clearMessages(message?.localId, 'image');
+                    }
+                    else if (message.text) {
+
+                        localMessageContext.clearMessages(message?.localId)
+                    }
+                    const isRetriedMessage = retryingMessageId === message?.localId;
 
                     if (isRetriedMessage) {
                         setRetryingMessageId(null);
@@ -140,62 +149,63 @@ const ChatBox = ({ chatId, userId, accessToken, data }: ChatProps) => {
                 }
 
                 if (data.id !== chatId) return;
+
                 setChatInfo((prev) => {
 
                     if (!prev) return {
                         id: data.id,
                         members: data.members,
-                        messages: [data.messages]
+                        messages: [message]
                     }
 
                     return {
                         ...prev,
-                        messages: [data.messages, ...prev.messages],
+                        messages: [data.messages[0], ...prev.messages],
                     }
                 })
 
                 //sound of message
-                newMessageSound({type:SOUND_TYPE.MESSAGE})
+                newMessageSound({ type: SOUND_TYPE.MESSAGE })
             });
 
             //Reaction from server
             socket.on("reactionNotification", (data) => {
 
                 if (!data) return;
+                console.log(data)
+                setChatInfo((prev) => {
 
-                setChatInfo((prev)=>{
+                    if (!prev || !prev.messages) return null;
 
-                    if(!prev || !prev.messages) return null;
 
-                    
                     return {
 
                         ...prev,
 
-                         messages:prev.messages.map((msg)=>{
+                        messages: prev.messages.map((msg) => {
 
-                            if(msg.id !== data.messageId) return msg;
+                            if (msg.id !== data.messageId) return msg;
 
-                            const updatedReaction = msg.reactions.filter((rx)=>rx.userId !== data.userId);
+                            const updatedReaction = msg.reactions.filter((rx) => rx.userId !== data.userId);
 
-                            if(!data.emoji){
+                            if (!data.emoji) {
 
                                 return {
                                     ...msg,
-                                    reactions:updatedReaction
+                                    reactions: updatedReaction
                                 }
                             }
 
                             return {
                                 ...msg,
-                                reactions:[...updatedReaction,data]
+                                reactions: [...updatedReaction, data]
                             }
                         })
-    
+
                     }
                 })
                 //sound of message
-                newMessageSound({type:SOUND_TYPE.REACTION})
+                newMessageSound({ type: SOUND_TYPE.REACTION })
             })
 
             return () => {
@@ -361,13 +371,13 @@ const ChatBox = ({ chatId, userId, accessToken, data }: ChatProps) => {
 
     }, [hasScrolled])
 
-    
+
     //move to bottom
     const moveToBottom = () => {
-        
+
         const container = containerRef.current;
         if (!container) return;
-        
+
         container.scroll({
             top: container.scrollHeight,
             behavior: "smooth"
@@ -377,23 +387,23 @@ const ChatBox = ({ chatId, userId, accessToken, data }: ChatProps) => {
     //retry sending from localStorage
     //not using currently as default auto retry is on
     const retrySending = (message: LocalStorageMessage) => {
-        
+
         if (!socket || !message.text) return;
-        
+
         setRetryingMessageId(message.localId);
-        
+
         try {
             // Emit the message to the server
-            
+
             socket.emit("sendMessage", {
                 text: message.text,
                 photo: message.photo || null,
                 chatId,
                 senderId: userId,
-                localId: message.localId
+                localId: message.localId,
             });
-            
-            
+
+
             setTimeout(() => {
                 setRetryingMessageId((current) => {
                     if (current === message.localId) {
@@ -402,27 +412,27 @@ const ChatBox = ({ chatId, userId, accessToken, data }: ChatProps) => {
                     return current;
                 });
             }, 2000)
-            
+
         } catch (error) {
             console.log("Error while sendind message")
         }
     }
-    
+
     //sending seen message acknowledgement
     useEffect(() => {
-        
+
         if (!socket || !chatInfo) return;
-        
+
         const oberserver = new IntersectionObserver((entries) => {
-            
+
             const visibleMessageIds = entries
-            .filter(entry => entry.isIntersecting)
-            .map(entry => entry.target.getAttribute('data-id'));
-            
+                .filter(entry => entry.isIntersecting)
+                .map(entry => entry.target.getAttribute('data-id'));
+
             const seenMessages = visibleMessageIds.filter(Boolean) as string[];
             const newSeenMessages = seenMessages.filter((messageId) => !newlySeenMessageRefs.current.includes(messageId))
             newlySeenMessageRefs.current = [...newlySeenMessageRefs.current, ...newSeenMessages];
-            
+
             if (newSeenMessages.length > 0) {
                 socket.emit("messageAcknowledge", {
                     messageIds: newSeenMessages,
@@ -430,10 +440,10 @@ const ChatBox = ({ chatId, userId, accessToken, data }: ChatProps) => {
                     userId,
                     acknowledge: "READ"
                 })
-                
+
                 //updating store
                 removeMessage({ chatId, messageIds: newSeenMessages })
-                
+
                 //updating last message
                 const messageId = newSeenMessages[newSeenMessages.length - 1];
                 markSeenLastMessage({ chatId, messageId })
@@ -443,29 +453,37 @@ const ChatBox = ({ chatId, userId, accessToken, data }: ChatProps) => {
             root: containerRef.current,
             threshold: 0.6,
         });
-        
+
         Object.entries(seenMessageRefs.current).forEach(([id, el]) => {
-            
+
             if (el) {
                 el.setAttribute('data-id', id);
                 oberserver.observe(el);
             }
         });
-        
+
         return () => oberserver.disconnect();
     }, [socket, chatInfo])
-    
+
     //editing sent message
     const handleMessageClick = (e: React.MouseEvent<HTMLUListElement>) => {
         const li = (e.target as HTMLElement).closest("li[data-message-id]");
+
+        console.log(e.clientY, window.innerHeight)
+
+        //determine whether to show reaction comp
+
+        const isUpperSide = e.clientY < (window.innerHeight / 2);
+
+        reactionCompPositionRef.current = isUpperSide ? "top-[100%]" : "bottom-[100%]"
         if (!li) {
-            
-            if(activeMessageId){
+
+            if (activeMessageId) {
                 setActiveMessageId(null)
             }
             return;
         }; // Not a message element
-        
+
         const messageId = li.getAttribute("data-message-id");
         if (messageId) {
             setActiveMessageId(messageId);
@@ -488,7 +506,7 @@ const ChatBox = ({ chatId, userId, accessToken, data }: ChatProps) => {
             ))}
         </ul>
     }
-    
+
     return (
         <div
 
@@ -506,8 +524,32 @@ const ChatBox = ({ chatId, userId, accessToken, data }: ChatProps) => {
                             localMessageContext?.messages?.map((message) => (
                                 <li
                                     key={message.localId} className='relative flex items-end self-end justify-end bg-gray-700 px-2 py-1 rounded-lg  max-w-[60%] text-white'>
-                                    <span className={`${message.senderId !== userId ? '' : ''}  rounded-lg w-full break-words`}>{message.text}</span>
-                                    <span className='text-[10px] text-gray-400 ml-1'><CiClock2 /></span>
+
+                                    {message.text ? (
+                                        <>
+                                            <span className={`${message.senderId !== userId ? '' : ''}  rounded-lg w-full break-words`}>
+                                                {message.replyTo && (
+                                                    <>
+                                                        {message.replyTo.text && (
+                                                            <span className={`bg-gray-500 block  rounded-md px-1 py-0.5`}>{message.replyTo.text}</span>
+                                                        )}
+                                                        {message.replyTo.photo && (
+                                                            <Image src={CloudImage(message.replyTo.photo)} alt='photo' height={100} width={100} className='max-w-full max-h-[200px] object-cover object-center' />
+                                                        )}
+                                                    </>
+                                                )}
+                                                {message.text}
+                                            </span>
+                                            <span className='text-[10px] text-gray-400 ml-1'><CiClock2 /></span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            {message.photo && (
+                                                <Image src={LocalImage(message.photo)} alt='photo' height={250} width={200} className='max-w-full max-h-[300px] object-cover object-center' />
+                                            )}
+                                            <span className='absolute right-2 bottom-2 text-white flex flex-row gap-0.5 text-[10px]'><CiClock2 /></span>
+                                        </>
+                                    )}
                                 </li>
                             ))
                         }
@@ -519,19 +561,46 @@ const ChatBox = ({ chatId, userId, accessToken, data }: ChatProps) => {
                                 <li
                                     ref={(el) => { (message.sender.id !== userId && message.status !== "READ") ? seenMessageRefs.current[message.id] = el : null }}
                                     data-message-id={message.id}
-                                    key={message.id} className={`${message.sender?.id !== userId ? 'self-start justify-start bg-white/20' : 'self-end justify-end bg-gray-700 '} ${message.reactions.length >0 && 'mb-2'} relative px-2 py-1 rounded-lg  max-w-[60%] bg-black text-white cursor-pointer `}>
+                                    key={message.id} className={`${message.sender?.id !== userId ? 'self-start justify-start bg-white/20' : 'self-end justify-end bg-gray-700 '} ${message.reactions.length > 0 && 'mb-2'} relative px-2 py-1 rounded-lg  max-w-[60%] bg-black text-white cursor-pointer `}>
 
-                                    <span className=' break-words block leading-snug min-w-full'>
-                                        {message.text}
+                                    {/* TEXT MESSAGE */}
+                                    {message.text && (
+                                        <span className=' break-words block leading-snug min-w-full'>
+                                            {message.replyTo && (
+                                                <>
+                                                    {message.replyTo.text && (
+                                                        <span className={`bg-gray-500 block  rounded-md px-1 py-0.5`}>{message.replyTo.text}</span>
+                                                    )}
+                                                    {message.replyTo.photo && (
+                                                        <Image
+                                                        placeholder="blur" 
+                                                        blurDataURL={'/auth-bg.webp'}
+                                                        src={CloudImage(message.replyTo.photo)} alt='photo' height={100} width={100} className='max-w-full max-h-[200px] object-cover object-center rounded-md' />
+                                                    )}
+                                                </>
+                                            )}
+                                            {message.text}
 
-                                        <span style={{ marginTop: 10 }} className=' text-gray-400 flex flex-row gap-0.5 text-[10px] float-right ml-1'>
-                                            {getTimeForMessage({ date: message.createdAt })}
-                                            {message.sender?.id === userId && <MessageStatus status={message.status} />}
+                                            <span style={{ marginTop: 10 }} className=' text-gray-400 flex flex-row gap-0.5 text-[10px] float-right ml-1'>
+                                                {getTimeForMessage({ date: message.createdAt })}
+                                                {message.sender?.id === userId && <MessageStatus status={message.status} />}
+                                            </span>
                                         </span>
-                                    </span>
+                                    ) } 
+                                    { message.photo &&(
+                                        <span className=' break-words block leading-snug min-w-full'>
+
+                                            <Image src={CloudImage(message.photo)} alt='photo' height={250} width={200} className='max-w-full max-h-[300px] object-cover object-center' />
+
+                                            <span style={{ marginTop: 10 }} className='absolute right-2 bottom-2 text-white flex flex-row gap-0.5 text-[10px] '>
+                                                {getTimeForMessage({ date: message.createdAt })}
+                                                {message.sender?.id === userId && <MessageStatus status={message.status} />}
+                                            </span>
+                                        </span>
+                                    )}
 
                                     {/* Reactions */}
-                                    {message.reactions.length>0 && (
+                                    {message.reactions.length > 0 && (
 
                                         <button className={`absolute -bottom-4 ${userId === message.sender.id ? 'right-2' : 'left-2'} bg-white/20 backdrop-blur-md  rounded-xl`}>
                                             {message.reactions.map((rsx) => (
@@ -543,8 +612,8 @@ const ChatBox = ({ chatId, userId, accessToken, data }: ChatProps) => {
 
                                     {/* REACTION COMP */}
                                     {activeMessageId === message.id && (
-                                        <div className={`${userId === message.sender.id ? 'right-0' : 'left-0'} absolute -bottom-8`}>
-                                            <ReactionComp messageId={message.id} reaction={message.reactions} func={setActiveMessageId}/>
+                                        <div className={`${userId === message.sender.id ? 'right-0' : 'left-0'} absolute ${reactionCompPositionRef.current} z-50`}>
+                                            <ReactionComp messageId={message.id} reaction={message.reactions} func={setActiveMessageId} photo={message.photo} text={message.text} />
                                         </div>
                                     )}
                                 </li>

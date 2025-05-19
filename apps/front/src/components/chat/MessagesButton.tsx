@@ -39,29 +39,33 @@ const MessagesButton = () => {
 
                 if (!data || !data.messages) return;
 
-                console.log("received at button")
+                console.log("received at button");
+
+
+                const message = data.messages[0];
+                if(!message) return;
                 //updating store
-                addMessage({ chatId: data.id, messageIds: [data.messages.id] })
+                addMessage({ chatId: data.id, messageIds: [data.messages[0].id] })
 
                 //update last message
                 const modifiedMesssage ={
-                    id:data.messages.id,
-                    photo:data.messages.photo,
-                    text:data.messages.text,
-                    createdAt:data.messages.createdAt,
-                    seen: data.messages.sender.id === userId
+                    id: message.id,
+                    photo: message.photo,
+                    text: message.text,
+                    createdAt: message.createdAt,
+                    seen: message.sender.id === userId
                 }
                 currentMessage({ chatId: data.id, message: modifiedMesssage })
 
                 //sending acknowledgement to server
                 //filtering out messageIds from other users
-                const isSameSender = data.messages?.sender.id == userId;
+                const isSameSender = message.sender.id == userId;
 
                 if (!isSameSender) {
 
                     socket.emit("messageAcknowledge", {
 
-                        messageIds: [data.messages.id],
+                        messageIds: [message.id],
                         chatId: data.id,
                         userId,
                         acknowledge: "DELIVERED"

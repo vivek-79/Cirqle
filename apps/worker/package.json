@@ -4,7 +4,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "tsc",
+    "compile": "tsc -b",
     "dev": "node dist/index.js"
   },
   "dependencies": {
@@ -13,6 +13,7 @@
     "dotenv": "^16.5.0"
   },
   "devDependencies": {
+    "@repo/dto":"*",
     "typescript": "^5.0.0"
   },
   "keywords": [],

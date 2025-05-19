@@ -1,14 +1,16 @@
 
 
-import { listenTOQueue,publishMessage } from "@repo/redis"
+import { listenTOQueue, publishMessage } from "@repo/redis"
 import { PrismaClient } from "@repo/db"
+import { PROCESSED_MESSAGE } from "@repo/dto"
 
 type MESSAGE_DTO = {
     text?: string,
     photo?: string,
     chatId: string,
     senderId: number,
-    localId: number
+    localId: number,
+    messageId?: string
 }
 
 (async () => {
@@ -25,7 +27,7 @@ type MESSAGE_DTO = {
         const msg = JSON.parse(msgStr) as MESSAGE_DTO;
 
         try {
-            const res = await prisma.$transaction(async(tx)=>{
+            const res = await prisma.$transaction(async (tx) => {
 
                 const data = await tx.message.create({
                     data: {
@@ -34,6 +36,9 @@ type MESSAGE_DTO = {
                         chatId: msg.chatId,
                         senderId: msg.senderId,
                         status: "SENT",
+                        ...(msg.messageId && {
+                            replyToId: msg.messageId
+                        })
                     },
                     select: {
                         chat: {
@@ -54,6 +59,9 @@ type MESSAGE_DTO = {
                         updatedAt: true,
                         chatId: true,
                         status: true,
+                        replyTo: msg.messageId
+                            ? { select: { text: true, photo: true, id: true } }
+                            : undefined,
                         sender: {
                             select: {
                                 name: true,
@@ -65,20 +73,20 @@ type MESSAGE_DTO = {
                 })
 
                 await tx.chat.update({
-                    where:{
-                        id:msg.chatId
+                    where: {
+                        id: msg.chatId
                     },
-                    data:{
-                        lastMessageId:data.id
+                    data: {
+                        lastMessageId: data.id
                     }
                 })
                 return data
             })
 
-            const modifiedData = {
+            const modifiedData: PROCESSED_MESSAGE = {
                 id: res.chatId,
                 members: res.chat.members,
-                messages: {
+                messages: [{
                     id: res.id,
                     text: res.text,
                     photo: res.photo,
@@ -86,10 +94,23 @@ type MESSAGE_DTO = {
                     updatedAt: res.updatedAt,
                     status: res.status,
                     localId: msg.localId,
-                    sender:res.sender,
-                    reactions:[]
-                }
+                    sender: res.sender,
+                    seenBy: [],
+                    reactions: [],
+                    statuses: [],
+
+                    ...((msg.messageId && res.replyTo) && {
+                        replyTo: {
+                            id: res.replyTo.id,
+                            text: res.replyTo.text,
+                            photo: res.replyTo.photo
+                        }
+                    })
+
+                }]
             }
+
+
 
             //sending back saved and processed message
             console.log("published from worker")

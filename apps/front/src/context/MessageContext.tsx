@@ -10,12 +10,16 @@ export type LocalStorageMessage = {
     photo?: File | null
     chatId: string
     senderId: number,
-    localId:number
+    localId:number,
+    replyTo?:{
+        text?: string | null,
+        photo?:string | null
+    }
 }
 type MessageContextType = {
     messages: LocalStorageMessage[];
     addMessage: (message: LocalStorageMessage) => void;
-    clearMessages: (id?:number) => void;
+    clearMessages: (id?:number,type?:string) => void;
 };
 
 
@@ -26,6 +30,11 @@ export const MessageProvider = ({ children }: { children: ReactNode }) => {
 
     //adding message to local storage
     const addMessage = (message: LocalStorageMessage) => {
+
+        if(message.photo){
+            setLocalMessages((prev) => [...prev, message]) ;
+            return;
+        };
         const savedMessages = localStorage.getItem("savedMessages");
         const parsedMessages = savedMessages ? JSON.parse(savedMessages) : [];
         const updatedSavedMessages = [...parsedMessages, message];
@@ -33,9 +42,18 @@ export const MessageProvider = ({ children }: { children: ReactNode }) => {
         setLocalMessages(updatedSavedMessages); 
     };
 
+
     //clearing messages from local storage
 
-    const clearMessages = (id?:number) => {
+    const clearMessages = (id?: number, type?: string) => {
+
+        if(type && type=="image"){
+            setLocalMessages((prev) =>{
+
+                return prev.filter((pre)=>pre.localId !==id)
+            });
+        };
+
         const savedMessages = localStorage.getItem("savedMessages");
         const parsedMessages = savedMessages ? JSON.parse(savedMessages) : [];
         const updatedSavedMessages = parsedMessages.filter((message:LocalStorageMessage) => message.localId !== id);

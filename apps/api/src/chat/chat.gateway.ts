@@ -1,14 +1,14 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit, SubscribeMessage, WebSocketGateway, WebSocketServer } from "@nestjs/websockets";
+import { OnGatewayConnection, OnGatewayInit, SubscribeMessage, WebSocketGateway, WebSocketServer } from "@nestjs/websockets";
 import { Server, Socket } from "socket.io";
-import { ACKNOWLEDGE, ACKNOWLEDGE_TO_USER, PROCESSED_MESSAGE, REACTION_NOTIFICATION, SEND_MESSAGE } from "./chat.dto";
+import { ACKNOWLEDGE, ACKNOWLEDGE_TO_USER, REACTION_NOTIFICATION, SEND_MESSAGE } from "./chat.dto";
 import { verify } from 'jsonwebtoken';
 import { rpushMessage } from '@repo/redis'
 import { redis } from "src/lib/redisSetup";
 import { ChatService } from "./chat.service";
 import { MessagesService } from "src/messages/messages.service";
 import { OnEvent } from "@nestjs/event-emitter";
-
+import { PROCESSED_MESSAGE } from "@repo/dto"
 
 
 
@@ -68,6 +68,8 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection {
 
   @SubscribeMessage("sendMessage")
   async handleMessage(client: any, data: SEND_MESSAGE) {
+
+    console.log("this chatgateway here=>",data.messageId)
     await rpushMessage("message", JSON.stringify(data))
   }
 
@@ -131,6 +133,22 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection {
       if(!socketId) return;
 
       this.io.to(socketId).emit("reactionNotification", data.data);
+
+    })))
+  }
+  //sending message reaction
+  @OnEvent("sendMedia", { async: true })
+  async handleMedia(data: PROCESSED_MESSAGE){
+
+    console.log(data)
+    await Promise.all((data.members.map(async (member) => {
+
+      const socketId = await redis.get(`socket:${member.id}`) as string
+
+      if (!socketId) {
+        this.logger.warn(`User ${member.id} is  not connected. Skipping emit.`);
+      }
+      this.io.to(socketId).emit("message", data)
 
     })))
   }

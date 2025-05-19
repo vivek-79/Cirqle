@@ -15,3 +15,14 @@ export class Reaction_Type{
     @IsString()
     reactionId?:string
 }
+
+export class SEND_FILE{
+
+    @IsNumber()
+    @Transform(({value})=>Number(value))
+    localId:number
+
+    @IsString()
+    @IsOptional()
+    text?:string
+}

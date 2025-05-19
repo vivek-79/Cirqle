@@ -1,3 +1,4 @@
+import { removeFromReply, closeChatModal, openChatModal } from "@/store/chatList.slice";
 import { RootState } from "@/store/store";
 import { addMessages, markLastmessageSeen, removeMessages, StoreMessage, updateLastMessage } from "@/store/unseenMessage.slice";
 import { User } from "@/types";
@@ -10,7 +11,11 @@ export const useStoredUser = (): User => useSelector((state: RootState) => state
 export const useGetUnseenMessageCount = (): number => useSelector((state: RootState) => state.unseenMessages.count);
 export const useChatStoredData = () => useSelector((state: RootState) => state.unseenMessages.data);
 
-export const useLastMessage =()=> useSelector((state:RootState)=>state.unseenMessages.lastMessage)
+export const useLastMessage = () => useSelector((state: RootState) => state.unseenMessages.lastMessage)
+
+export const useReplyingMessage = () => useSelector((state: RootState) => state.Replying.data);
+
+export const useChatModel = () => useSelector((state: RootState) => state.Replying.chatModelOpen)
 
 export const useUnseenMessageActions = () => {
     const dispatch = useDispatch();
@@ -29,9 +34,20 @@ export const useUnseenMessageActions = () => {
         dispatch(updateLastMessage({ chatId, message }))
     }
 
-    const markSeenLastMessage = ({ chatId, messageId }: { chatId: string, messageId:string})=>{
+    const markSeenLastMessage = ({ chatId, messageId }: { chatId: string, messageId: string }) => {
         dispatch(markLastmessageSeen({ chatId, messageId }))
     }
-    return { addMessage, removeMessage, currentMessage, markSeenLastMessage }
+
+    const clearReplyingMessage = () => {
+        dispatch(removeFromReply())
+    }
+
+    const closeChatsModel = () => {
+        dispatch(closeChatModal())
+    }
+    const openChatsModel = () => {
+        dispatch(openChatModal())
+    }
+    return { addMessage, removeMessage, currentMessage, markSeenLastMessage, clearReplyingMessage, closeChatsModel, openChatsModel }
 }
 

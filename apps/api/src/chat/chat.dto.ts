@@ -19,7 +19,8 @@ export class SEND_MESSAGE{
     photo?:string | null;
     chatId:string;
     senderId:number;
-    localId:number
+    localId:number;
+    messageId?:string
 }
 
 export class CHAT_MEMBERS{

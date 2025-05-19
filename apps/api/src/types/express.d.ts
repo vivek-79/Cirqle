@@ -2,7 +2,7 @@
 import { Request } from 'express';
 export interface UserPayload {
   
-    id: Number;
+    id: number;
     email: string
 }
 

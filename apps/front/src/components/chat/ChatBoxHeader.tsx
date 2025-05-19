@@ -4,10 +4,10 @@ import React from 'react'
 import { GoInfo } from "react-icons/go";
 
 type Props = {
-    avatar?: string | null;
+    avatar: string | null;
     isOnline?: boolean;
     lastOnline?: string;
-    name?: string
+    name: string | null
 }
 
 const ChatBoxHeader = ({ avatar, isOnline, lastOnline, name }: Props) => {

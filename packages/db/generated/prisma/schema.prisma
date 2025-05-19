@@ -142,6 +142,9 @@ model Message {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  replyToId String?
+  replyTo   Message?        @relation("MessagesReplies", fields: [replyToId], references: [id])
+  replies   Message[]       @relation("MessagesReplies")
   reactions Reaction[]
   status    Status          @default(SENT)
   statuses  MessageStatus[]
@@ -169,7 +172,7 @@ model MessageStatus {
 
 model Reaction {
   id    String @id @default(uuid())
-  emoji String // e.g. "❤️", "😂", "🔥"
+  emoji String
 
   userId    Int
   messageId String
@@ -177,7 +180,7 @@ model Reaction {
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, messageId, emoji]) // optional: prevent duplicate reactions
+  @@unique([userId, messageId, emoji])
 }
 
 enum Status {

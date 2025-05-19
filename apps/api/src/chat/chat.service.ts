@@ -3,6 +3,7 @@ import { ChatGateway } from "./chat.gateway";
 import { PrismaService } from "src/prisma/prisma.service";
 import { CREATE_CHAT } from "./chat.dto";
 import { messageStatusUpdater } from "./messageStatusUpdater";
+import { USER_CHATS } from "@repo/dto";
 
 
 @Injectable()
@@ -101,7 +102,7 @@ export class ChatService {
             }
             return chats;
         } catch (error) {
-            return new InternalServerErrorException("Server error")
+            throw new InternalServerErrorException("Server error")
         }
     }
 
@@ -171,6 +172,13 @@ export class ChatService {
                                 createdAt: true,
                                 updatedAt: true,
                                 status: true,
+                                replyTo:{
+                                    select:{
+                                        id:true,
+                                        text:true,
+                                        photo:true,
+                                    }
+                                },
                                 reactions:{
                                     select:{
                                         id:true,

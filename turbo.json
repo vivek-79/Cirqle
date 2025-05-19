@@ -12,8 +12,8 @@
     "db:deploy":{
       "cache": false
     },
-    "build": {
-      "dependsOn": ["^build","^db:generate"],
+    "compile": {
+      "dependsOn": ["^compile"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "outputs": ["dist/**"]
     },

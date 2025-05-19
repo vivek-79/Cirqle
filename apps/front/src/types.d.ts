@@ -1,7 +1,7 @@
 
 import { IconType } from "react-icons";
-import { CHAT_MEMBERS, MESSAGE, PROCESSED_MESSAGE } from "./components/chat/ChatBox";
-
+import { CHAT_MEMBERS, MESSAGE } from "./components/chat/ChatBox";
+import { PROCESSED_MESSAGE } from "@repo/dto"
 
 export type SideNav ={
     name:string;
@@ -34,19 +34,6 @@ export type UserProfile = {
     suggestions:boolean
 }
 
-export type Chat = {
-    id:string,
-    name:string | null
-    lastMessage:{
-        id:number,
-        photo:string | null,
-        text:string | null,
-        createdAt:Date
-    } | null,
-    members:User[]
-    isGroup:boolean
-    groupAvatar:string | null,
-}
 
 export type ChatDetails={
     isGroup:boolean,
@@ -84,12 +71,12 @@ export type UNSEEN_MESSAGES={
 
 export type REACTION_NOTIFICATION={
     id: string,
-    emoji: string | null,
+    emoji: string ,
     messageId: string,
     userId:number
 }
 export interface ClientToServerEvents {
-    sendMessage: (data: { text: string | null, photo:File | null , chatId: string, senderId:number,localId:number }) => void;
+    sendMessage: (data: { text: string | null, photo:File | null , chatId: string, senderId:number,localId:number,messageId?:string }) => void;
     messageAcknowledge: (data: SEND_ACKNOWLEDGE)=> void;
     getUndeliveredMessagesCount:(data:{userId:number})=>void;
     getUnseenMessages:(data:{userId:number})=>void;
@@ -97,7 +84,7 @@ export interface ClientToServerEvents {
 }
 
 export interface ServerToClientEvents {
-    message: (data: EACH_PROCESSED_MESSAGE) => void;
+    message: (data: PROCESSED_MESSAGE) => void;
 
     messageAcknowledgement: (data: MESSAGE_ACKNOWLEDGEMENT) => void;
 

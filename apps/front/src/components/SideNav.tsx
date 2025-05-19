@@ -155,7 +155,7 @@ const SideNav = () => {
             </div>
 
             {/* Slider */}
-            <div ref={searchRef} style={{ width: showSearch ? 250 : 0 }} className='fixed top-0 left-18 xl:left-51 bottom-0 z-50 bg-black overflow-hidden pt-8 transition-all duration-500 shadow-md shadow-white'>
+            <div ref={searchRef} style={{ width: showSearch ? 310 : 0 }} className='fixed top-0 left-18 xl:left-51 bottom-0 z-50 bg-black overflow-hidden pt-8 transition-all duration-500 shadow-md shadow-white'>
                 <Provider store={store}>
                     <LeftSliderComp comp={currentVisibleComp} />
                 </Provider>

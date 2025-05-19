@@ -1,5 +1,5 @@
 "use client"
-import ChatBox, { PROCESSED_MESSAGE } from '@/components/chat/ChatBox';
+import ChatBox from '@/components/chat/ChatBox';
 import ChatBoxHeader from '@/components/chat/ChatBoxHeader';
 import MessageInput from '@/components/chat/MessageInput';
 import { AccessToken, api } from '@/constants';
@@ -9,11 +9,12 @@ import axios from 'axios';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner';
+import { CHAT_DETAILS} from "@repo/dto"
 
 
 const ChatComp = () => {
 
-    const [chatDetails, setChatDetails] = useState<PROCESSED_MESSAGE | null | undefined>(null)
+    const [chatDetails, setChatDetails] = useState<CHAT_DETAILS | null >(null)
     const user = useStoredUser();
     const params = useParams();
     const chatId = Array.isArray(params.id) ? params.id[0] : params.id
@@ -33,6 +34,8 @@ const ChatComp = () => {
                 })
 
                 setChatDetails(res.data)
+
+                console.log(res.data)
             })()
         } catch (error) {
 
@@ -53,7 +56,7 @@ const ChatComp = () => {
 
             {/* Chat Box */}
             <ChatBox chatId={chatId} userId={user.id} accessToken={user.accessToken} data={chatDetails} />
-            <MessageInput chatId={chatId} userId={user.id} />
+            <MessageInput chatId={chatId} userId={user.id} accessToken={user.accessToken}/>
         </div>
     )
 }

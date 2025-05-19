@@ -3,25 +3,25 @@
 import React, { ReactNode, useEffect, useRef, useState } from 'react'
 import axios from 'axios'
 import { AccessToken, api } from '@/constants'
-import { useLastMessage, useStoredUser, useUnseenMessageActions } from '@/hooks/store.actions'
+import { useChatModel, useLastMessage, useStoredUser, useUnseenMessageActions } from '@/hooks/store.actions'
 import { SiGodaddy } from "react-icons/si";
 import AddNewChatModal from '@/components/chat/AddNewChatModal'
-import { Chat } from '@/types'
 import Image from 'next/image'
 import { CloudImage } from '@/helpers/getFullImageUrl'
 import { useRouter } from 'next/navigation'
 import { StoreMessage } from '@/store/unseenMessage.slice'
+import { USER_CHATS } from "@repo/dto"
 
 const LayoutComp = ({ children }: { children: ReactNode }) => {
 
-    const [chatList, setChatList] = useState<Chat[]>([]);
-    const [showAddChatModal, setShowAddChatModal] = useState<boolean>(false)
+    const [chatList, setChatList] = useState<USER_CHATS[] | []>([]);
     const user = useStoredUser();
     const openModal = useRef<HTMLDivElement>(null);
     const router = useRouter()
     const lastmessages = useLastMessage();
-    const { currentMessage } = useUnseenMessageActions()
+    const { currentMessage ,openChatsModel,closeChatsModel} = useUnseenMessageActions()
 
+    const isChatModelOpen = useChatModel();
     //Fetching chat list
     useEffect(() => {
 
@@ -47,7 +47,7 @@ const LayoutComp = ({ children }: { children: ReactNode }) => {
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (openModal.current && !openModal.current.contains(event.target as Node)) {
-                setShowAddChatModal(false);
+                closeChatsModel();
             }
         };
 
@@ -57,7 +57,7 @@ const LayoutComp = ({ children }: { children: ReactNode }) => {
         return () => {
             document.removeEventListener("mousedown", handleClickOutside);
         };
-    }, [showAddChatModal]);
+    }, [isChatModelOpen]);
 
     if (!user) {
         return;
@@ -67,19 +67,19 @@ const LayoutComp = ({ children }: { children: ReactNode }) => {
         <section className='w-full h-full flex flex-row'>
 
             {/* Add new chat Modal */}
-            {showAddChatModal && (
+            {isChatModelOpen && (
                 <div className='fixed inset-0 bg-black/50 z-50' >
                     <div ref={openModal}>
-                        <AddNewChatModal onPress={setShowAddChatModal} />
+                        <AddNewChatModal />
                     </div>
                 </div>
             )}
 
             {/* User list */}
-            <div className='h-full w-25 md:w-[250px] line border-r-1 flex flex-col pt-10'>
+            <div className='h-full w-25 md:w-[310px] line border-r-1 flex flex-col pt-10'>
                 <div className='flex h-10 flex-row justify-between w-full max-md:justify-center md:px-2 items-center'>
                     <p className='hidden md:block font-bold text-lg'>{user.name}</p>
-                    <button onClick={(e) => setShowAddChatModal((prev) => !prev)}><SiGodaddy size={22} /></button>
+                    <button className='hover-black cursor-pointer' onClick={() => openChatsModel()}><SiGodaddy size={22} /></button>
                 </div>
                 <div className='flex flex-row items-center justify-between px-4 pt-4'>
                     <button className='text-sm font-bold'>Messages</button>
@@ -114,7 +114,7 @@ const LayoutComp = ({ children }: { children: ReactNode }) => {
                                     <span className='text-xs font-semibold'>
                                         {lastmessages[chat?.id] && (
                                             <>
-                                                <span className={`max-md:hidden ${lastmessages[chat?.id].seen ? 'text-gray-400' : 'text-white'}`}>{lastmessages?.[chat.id]?.text}</span>
+                                                <span className={`max-md:hidden ${lastmessages[chat?.id].seen ? 'text-gray-400' : 'text-white'}`}>{lastmessages?.[chat.id]?.text || 'Sent an attachment'}</span>
                                                 
                                                 {/* SMALL SCREEN MESSAGE INDICATOR */}
                                                 {!lastmessages[chat?.id].seen && (
