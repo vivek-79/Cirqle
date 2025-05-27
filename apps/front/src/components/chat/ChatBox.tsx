@@ -65,7 +65,7 @@ const ChatBox = ({ chatId, userId, accessToken, data }: ChatProps) => {
     //getting messages context
     const localMessageContext = useContext(MessageContext);
     const socket = useSocket();
-    const { clearReplyingMessage, removeMessage, currentMessage, markSeenLastMessage } = useUnseenMessageActions()
+    const { removeMessage, currentMessage, markSeenLastMessage } = useUnseenMessageActions()
     const containerRef = useRef<HTMLUListElement | null>(null)
     const [chatInfo, setChatInfo] = useState<PROCESSED_MESSAGE | null | undefined>(data);
     const [hasScrolled, setHasScrolled] = useState<boolean>();

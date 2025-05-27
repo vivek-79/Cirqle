@@ -1,1 +1,1 @@
-{"root":["./src/chats.dto.ts","./src/index.ts","./src/messages.dto.ts","./src/user.dto.ts"],"version":"5.8.2"}
+{"root":["./src/chats.dto.ts","./src/index.ts","./src/messages.dto.ts","./src/notification.dto.ts","./src/user.dto.ts"],"version":"5.8.2"}

@@ -1,12 +1,12 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { FRIEND_WITH_NO_CHAT, FriendRequestDto, RemoveFriendDto } from './dto/friend-request.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { Prisma } from '@repo/db';
+import { NotificationService } from 'src/notification/notification.service';
 
 @Injectable()
 export class FriendService {
 
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService, private readonly notificatioService:NotificationService) { }
 
   //add friend flow
   async sendRequest(req: FriendRequestDto) {
@@ -46,47 +46,68 @@ export class FriendService {
       })
 
 
+      let notification;
 
       //adding in friends list and deleting request
       if (firstTimeFollow || followingAfterUnfollow) {
 
-        const transactionOps: Prisma.PrismaPromise<any>[] = [
-          this.prisma.follows.create({
+        const transactionResults = await this.prisma.$transaction ([
+           this.prisma.follows.create({
             data: {
               followerId: senderId,
               followingId: receiverId
             }
           }),
 
-          this.prisma.notification.create({
+           this.prisma.notification.create({
             data: {
-              type: "FRIEND_REQUEST",
+              type: "FOLLOW",
               message: 'Started following you.',
               senderId,
               receiverId
+            },
+            select:{
+              id:true,
+              type:true,
+              message:true,
+              createdAt: true,
+              isRead: true,
+              receiverId: true,
+              sender:{
+                select:{
+                  id:true,
+                  name:true,
+                  avatar:true
+                }
+              }
             }
-          })
+          }),
 
-        ];
+          //deleting request if first time foolowing
+          ...(firstTimeFollow ?[
+            this.prisma.friendRequests.delete({
+              where: {
+                id: firstTimeFollow.id
+              }
+            })
+          ]:[])
 
-        //deleting request if first time foolowing
-        if (firstTimeFollow) {
-          transactionOps.push(this.prisma.friendRequests.delete({
-            where: {
-              id: firstTimeFollow.id
-            }
-          }))
-        }
+        ]);
 
-        await this.prisma.$transaction(transactionOps);
+        notification = transactionResults[1];
+        // sending notification to receiver
+        if (notification) {
+          await this.notificatioService.sendNotification(notification);
+        };
         return {
           message: "Added to follwings.",
           status: true
         }
       }
 
-      await this.prisma.$transaction([
-        this.prisma.friendRequests.create({
+      // if first time following , create request and send notification
+      const transactionResults = await this.prisma.$transaction([
+         this.prisma.friendRequests.create({
           data: {
             senderId,
             receiverId
@@ -104,11 +125,33 @@ export class FriendService {
             senderId,
             receiverId,
             message: `Started following you.`,
-            type: "FRIEND_REQUEST"
+            type: "FOLLOW"
+          },
+          select: {
+          id: true,
+          type: true,
+          message: true,
+          createdAt:true,
+          isRead:true,
+          receiverId: true,
+          sender: {
+            select: {
+              id: true,
+              name: true,
+              avatar: true
+            }
           }
+        }
         })
       ])
 
+      notification = transactionResults[2];
+      // sending notification to receiver
+      if(notification){
+        await this.notificatioService.sendNotification(notification);
+      };
+
+      //returning success message
       return {
         message: "Added to followings.",
         status: true

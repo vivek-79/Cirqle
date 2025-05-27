@@ -93,7 +93,6 @@ export type FriendRequestStatus = (typeof FriendRequestStatus)[keyof typeof Frie
 
 export const NotificationType: {
   FRIEND_REQUEST: 'FRIEND_REQUEST',
-  MESSAGE: 'MESSAGE',
   COMMENT: 'COMMENT',
   LIKE: 'LIKE',
   FOLLOW: 'FOLLOW'

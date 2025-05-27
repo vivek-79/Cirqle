@@ -197,7 +197,6 @@ enum FriendRequestStatus {
 
 enum NotificationType {
   FRIEND_REQUEST
-  MESSAGE
   COMMENT
   LIKE
   FOLLOW

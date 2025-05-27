@@ -4,6 +4,7 @@ import { UpdateUserDto } from "src/dto";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { UploadImageType } from "src/lib/image-upload";
 import { JwtAuthGuard } from "src/user.middleware";
+import { User } from "src/lib/user-Decorator";
 
 
 @Controller('/user')
@@ -26,8 +27,8 @@ export class UserController {
 
 
     @Get('/search/:name')
-    getSearchedUser(@Param('name') name: string) {
-        return this.userService.getSearchedUser(name)
+    getSearchedUser(@Param('name') name: string, @User('id') id:number) {
+        return this.userService.getSearchedUser(name,id)
     }
 
 

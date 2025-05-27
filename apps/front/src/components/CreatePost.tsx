@@ -1,28 +1,27 @@
 'use client'
 
 import Image from "next/image";
-import { Dispatch, RefObject, SetStateAction, useRef, useState } from "react"
+import { useRef, useState } from "react"
 import { IoMdImages } from "react-icons/io";
-import { RxCross2 } from "react-icons/rx";
 import { BsArrowLeftShort } from "react-icons/bs";
 import { useForm } from "react-hook-form";
 import axios from "axios";
 import { AccessToken, api } from "@/constants";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { useUnseenMessageActions } from "@/hooks/store.actions";
 
 
 
 
 type Props = {
-    setShowModal: Dispatch<SetStateAction<boolean>>,
     userId:number,
     accessToken?:string
 }
 
-const CreatePost = ({ setShowModal, userId, accessToken }: Props) => {
+const CreatePost = ({ userId, accessToken }: Props) => {
 
-    console.log(accessToken)
+    const { setModels } = useUnseenMessageActions();
     const [step, setStep] = useState<number>(0);
     const fileInputRef = useRef<HTMLInputElement>(null)
     const [preview, setPreview] = useState<string | null>(null);
@@ -52,7 +51,7 @@ const CreatePost = ({ setShowModal, userId, accessToken }: Props) => {
             });
 
             if(res.data.status){
-                setShowModal(false)
+                setModels('')
                 router.push(`/${userId}`)
             }
             else{
@@ -81,7 +80,7 @@ const CreatePost = ({ setShowModal, userId, accessToken }: Props) => {
                                 setStep((prev) => prev - 1)
                             }
                             else {
-                                setShowModal(false)
+                                setModels('')
                             }
                         }
                         }

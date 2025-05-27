@@ -240,7 +240,6 @@ exports.Prisma.NullsOrder = {
 };
 exports.NotificationType = exports.$Enums.NotificationType = {
   FRIEND_REQUEST: 'FRIEND_REQUEST',
-  MESSAGE: 'MESSAGE',
   COMMENT: 'COMMENT',
   LIKE: 'LIKE',
   FOLLOW: 'FOLLOW'

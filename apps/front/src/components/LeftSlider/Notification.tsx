@@ -2,15 +2,15 @@ import { hoursAgo } from '@/helpers/timeConverter';
 import { AccessToken, api } from '@/constants';
 import { useStoredUser } from '@/hooks/store.actions';
 import axios from 'axios';
-import { formatDistanceToNow } from 'date-fns';
 import React, { useEffect, useState } from 'react'
-import HighlightedBackground from '../HighlightedBackground';
 import Image from 'next/image';
 import { CloudImage } from '@/helpers/getFullImageUrl';
 import ClientButton from '../ui/btn';
 import { sendFriendRequest } from '@/helpers/followerFlowHandler';
 import { toast } from 'sonner';
 import { User } from '@/types';
+import { useSocket } from '@/hooks/webSocket';
+import { NOTIFICATION } from "@repo/dto"
 
 
 enum Notification_Type {
@@ -25,24 +25,13 @@ export enum RESPONSE_TYPE {
   FOLLOW = "FOLLOW",
   UNFOLLOW = "UNFOLLOW"
 }
-interface Notification {
-  message: string,
-  isRead: boolean,
-  createdAt: string,
-  type: Notification_Type,
-  sender: {
-    avatar: string,
-    name: string,
-    id: number
-  },
-  isOneWayFollow?: boolean
-}
 
-const Notification = () => {
+const NotificationComp = () => {
 
-  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [notifications, setNotifications] = useState<NOTIFICATION[]>([])
   //getting user from custom hook
   const user = useStoredUser();
+  const socket = useSocket();
 
   //getting notifications
   useEffect(() => {
@@ -53,19 +42,35 @@ const Notification = () => {
           headers: AccessToken(user.accessToken)
         });
         setNotifications(res.data)
+        console.log(res.data)
       } catch (err) {
         console.error("Failed to fetch notifications:", err);
       }
     };
 
     getNotifications();
+
   }, [user])
 
-  console.log(notifications)
+  //real time notification
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.on("notification", (data) => {
+
+      console.log(data)
+      setNotifications((prev)=>[...prev,data])
+    });
+
+    return () => { socket.off("notification") };
+
+  }, [socket])
 
   const weekNotifs = notifications.filter(n => hoursAgo(n.createdAt) < 169);
   const monthNotifs = notifications.filter(n => hoursAgo(n.createdAt) >= 169 && hoursAgo(n.createdAt) < 5041);
   const earlierNotifs = notifications.filter(n => hoursAgo(n.createdAt) >= 5041);
+
+
   return (
     <div className='w-full h-full z-50'>
       <h2 className='text-2xl font-bold ml-2'>Notifications</h2>
@@ -77,7 +82,7 @@ const Notification = () => {
           <>
             <p className='text-sm font-bold mt-4'>This week</p>
             {weekNotifs.map(n => (
-              <NotifiCationShower key={n.createdAt} notification={n} user={user} />
+              <NotifiCationShower key={n.id} notification={n} user={user} />
             ))}
             <hr className='line' />
           </>
@@ -88,7 +93,7 @@ const Notification = () => {
           <>
             <p className='text-sm font-bold mt-2'>This month</p>
             {monthNotifs.map(n => (
-              <NotifiCationShower key={n.createdAt} notification={n} user={user} />
+              <NotifiCationShower key={n.id} notification={n} user={user} />
             ))}
             <hr className='line' />
           </>
@@ -99,7 +104,7 @@ const Notification = () => {
           <>
             <p className='text-sm font-bold mt-2'>Earlier</p>
             {earlierNotifs.map(n => (
-              <NotifiCationShower key={n.createdAt} notification={n} user={user} />
+              <NotifiCationShower key={n.id} notification={n} user={user} />
             ))}
           </>
         )}
@@ -108,12 +113,12 @@ const Notification = () => {
   )
 }
 
-export default Notification;
+export default NotificationComp;
 
 
 
 
-const NotifiCationShower = ({ notification, user }: { notification: Notification, user: User }) => {
+const NotifiCationShower = ({ notification, user }: { notification: NOTIFICATION, user: User }) => {
 
   //Response to follower notifications
   const AddFriend = async ({ receiverId, type }: { receiverId: number, type: RESPONSE_TYPE }) => {
@@ -146,13 +151,16 @@ const NotifiCationShower = ({ notification, user }: { notification: Notification
             </span>
           </span>
 
-          <span>
-            {notification?.isOneWayFollow ?
-              <ClientButton onPress={() => AddFriend({ type: RESPONSE_TYPE.FOLLOW, receiverId: notification.sender.id })} content="Follow Back" containerClass='ml-2 bg-blue-900/60 py-1 px-2 text-xs font-semibold rounded-md hover:bg-blue-800' />
-              :
-              <ClientButton onPress={() => AddFriend({ type: RESPONSE_TYPE.UNFOLLOW, receiverId: notification.sender.id })} content="Unfollow" containerClass='ml-2 bg-gray-800 py-1 px-2 text-xs font-semibold rounded-md hover:bg-gray-700' />
-            }
-          </span>
+          {/* Follow Back and Unfollow Button */}
+          { notification.type =="FOLLOW" &&(
+            <span>
+              {notification?.isOneWayFollow ?
+                <ClientButton onPress={() => AddFriend({ type: RESPONSE_TYPE.FOLLOW, receiverId: notification.sender.id })} content="Follow Back" containerClass='ml-2 bg-blue-900/60 py-1 px-2 text-xs font-semibold rounded-md hover:bg-blue-800' />
+                :
+                <ClientButton onPress={() => AddFriend({ type: RESPONSE_TYPE.UNFOLLOW, receiverId: notification.sender.id })} content="Unfollow" containerClass='ml-2 bg-gray-800 py-1 px-2 text-xs font-semibold rounded-md hover:bg-gray-700' />
+              }
+            </span>
+          ) }
         </p>
       </div>
     </div>

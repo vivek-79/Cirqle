@@ -1,7 +1,7 @@
 import { formatDistanceToNow } from "date-fns";
 
  //getting hours
- export const hoursAgo = (time: string) => {
+ export const hoursAgo = (time: Date) => {
 
     const formatted = formatDistanceToNow(new Date(time));
     const cleaned = formatted.replace(/^(about|over|almost)\s/, "");

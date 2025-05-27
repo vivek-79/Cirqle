@@ -2,7 +2,7 @@
 import { IconType } from "react-icons";
 import { CHAT_MEMBERS, MESSAGE } from "./components/chat/ChatBox";
 import { PROCESSED_MESSAGE } from "@repo/dto"
-
+import { NOTIFICATION }  from "@repo/dto"
 export type SideNav ={
     name:string;
     icon?:IconType;
@@ -91,6 +91,8 @@ export interface ServerToClientEvents {
     undeliveredMessagesCount: (data: UNSEEN_MESSAGES[]) => void;
     UnseenMessages: (data: UNSEEN_MESSAGES[]) => void;
 
-    reactionNotification: (data: REACTION_NOTIFICATION)=>void
+    reactionNotification: (data: REACTION_NOTIFICATION)=>void;
+
+    notification:(data:NOTIFICATION) => void;
     // add more if needed
 }

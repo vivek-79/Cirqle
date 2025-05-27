@@ -141,7 +141,7 @@ export class UserServices {
     }
 
 
-    async getSearchedUser(name: string) {
+    async getSearchedUser(name: string, id: number) {
 
         const users = await this.prisma.user.findMany({
             where: {
@@ -153,7 +153,12 @@ export class UserServices {
             select: {
                 name: true,
                 avatar: true,
-                id: true
+                id: true,
+                followers: {
+                    select: {
+                        followerId: true,
+                    }
+                }
             }
         })
         if (users.length === 0) {
@@ -161,7 +166,18 @@ export class UserServices {
         }
 
 
+        const modifiedUser = users.map((user) => {
 
-        return users
+            const isFollowing = user.followers.some((follower) => follower.followerId == id);
+
+            const modifiedData = {
+                ...user,
+                isFollowing
+            }
+            return modifiedData;
+        })
+
+
+        return modifiedUser;
     }
 }

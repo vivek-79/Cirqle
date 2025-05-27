@@ -2,32 +2,45 @@
 import { AccessToken, api } from '@/constants'
 import { User } from '@/types'
 import axios from 'axios'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import HighlightedBackground from '../HighlightedBackground'
 import { toast } from 'sonner'
 import { useStoredUser } from '@/hooks/store.actions'
 import { sendFriendRequest } from '@/helpers/followerFlowHandler'
-
+import { useDebounce } from '@/hooks/useDebounce'
+import { SEARCHED_USER } from '@repo/dto'
 
 
 const SearchComp = () => {
 
-    const [searchedUsers, setSearchedUsers] = useState<User[]>([])
+    const [searchedUsers, setSearchedUsers] = useState<SEARCHED_USER[]>([])
+    const [input, setInput] = useState("");
+    const debouncedInput = useDebounce(input, 1000);
 
     //getting user from custom hook
     const user = useStoredUser();
 
     //searching users
-    const onSearch = async (name: string) => {
+    useEffect(() => {
+        const fetchData = async () => {
+            if (!debouncedInput || !user?.accessToken) return;
 
-        if(!user || !user.accessToken) return;
-        if (name.length > 0) {
-            console.log(name,api)
-            const foundPersons = await axios.get(`${api}/user/search/${name}`, { withCredentials: true ,headers:AccessToken(user.accessToken)});
-            setSearchedUsers(foundPersons.data || [])
-        }
+            try {
+                const res = await axios.get(
+                    `${api}/user/search/${debouncedInput}`,
+                    {
+                        withCredentials: true,
+                        headers: AccessToken(user.accessToken),
+                    }
+                );
+                setSearchedUsers(res.data || []);
+            } catch (err) {
+                console.error("Search failed:", err);
+            }
+        };
 
-    }
+        fetchData();
+    }, [debouncedInput, user]);
 
 
 
@@ -51,7 +64,9 @@ const SearchComp = () => {
         <div className='w-full h-full'>
             <h2 className='text-2xl font-bold ml-2'>Search</h2>
 
-            <input type="text" onChange={(e) => onSearch(e.target.value)} placeholder='Search' className='ml-[3%] bg-white/40 h-10 mt-10 rounded-md w-[90%]  outline-none px-2 ' />
+            <input type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)} placeholder='Search...' className='ml-[3%] bg-white/40 h-10 mt-10 rounded-md w-[90%]  outline-none px-2 ' />
 
             <hr className='w-full mt-4 text-gray-600' />
 
@@ -66,7 +81,15 @@ const SearchComp = () => {
                                 <span className=' font-medium'>{user.name}</span>
                                 <span className='text-xs text-gray-300'>_dji.hgd</span>
                             </div>
-                            <button onClick={() => AddFriend(user.id)} className='text-xs text-blue-500 cursor-pointer hover-black'>follow</button>
+
+                            {/* Conditional Follow Button */}
+                            {!user.isFollowing && (
+                                <button
+                                    onClick={() => AddFriend(user.id)}
+                                    className='text-xs text-blue-500 cursor-pointer hover-black'>
+                                    Follow
+                                </button>
+                            )}
                         </div>
                     ))}
                 </div>

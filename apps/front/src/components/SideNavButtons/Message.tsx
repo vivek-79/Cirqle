@@ -9,9 +9,11 @@ import StoreProviderWrapper from "../Store-layouts/StoreProviderWrapper";
 import { newMessageSound, SOUND_TYPE } from "@/helpers/sounds";
 import { UNSEEN_MESSAGES } from "@/types";
 import { usePathname } from "next/navigation";
+import Link from "next/link";
+import { path } from "@/constants";
 type Message = { id: string; chatId: string };
 
-const MessagesButton = () => {
+const Message = () => {
     
     
     const pathname = usePathname()
@@ -175,15 +177,16 @@ const MessagesButton = () => {
     }, [socket, userId]);
 
     return (
-        <>
+        <div className="side-nav-btn">
             <StoreProviderWrapper>
                 <DisplayButton count={unseenMessageCount} />
             </StoreProviderWrapper>
-        </>
+            <span className="max-xl:hidden block">Messages</span>
+        </div>
     )
 }
 
-export default MessagesButton;
+export default Message;
 
 
 const DisplayButton = ({ count }: { count: number }) => {
@@ -200,9 +203,9 @@ const DisplayButton = ({ count }: { count: number }) => {
     }, [socket, user])
 
     return (
-        <span className="relative h-7 w-7 ">
+        <Link href={`${path}/messages`} className="relative h-7 w-7 ">
             <span className="absolute -top-1 left-[80%] text-xs text-blue-400 bg-gray-700 px-1 rounded-full">{count > 0 ? count : ''}</span>
             <TbMessageCircleBolt size={26} className="text-white hover-black" />
-        </span>
+        </Link>
     )
 }

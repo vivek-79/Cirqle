@@ -9,7 +9,7 @@ import { ChatService } from "./chat.service";
 import { MessagesService } from "src/messages/messages.service";
 import { OnEvent } from "@nestjs/event-emitter";
 import { PROCESSED_MESSAGE } from "@repo/dto"
-
+import { NOTIFICATION } from "@repo/dto"
 
 
 @Injectable()
@@ -140,7 +140,6 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection {
   @OnEvent("sendMedia", { async: true })
   async handleMedia(data: PROCESSED_MESSAGE){
 
-    console.log(data)
     await Promise.all((data.members.map(async (member) => {
 
       const socketId = await redis.get(`socket:${member.id}`) as string
@@ -152,6 +151,21 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection {
 
     })))
   }
+
+  //sending each notification
+  @OnEvent('sendNotification',{async:true})
+  async sendNotification(data:NOTIFICATION){
+    
+    console.log("Notification=>",data)
+    const socketId = await redis.get(`socket:${data[0].receiverId}`) as string;
+
+    if(!socketId){
+      this.logger.warn(`User ${data[0].receiverId} is not connected. Skipping Notification`)
+    }
+
+    this.io.to(socketId).emit("notification",data[0]);
+  }
+
   // Send message to user
   async sendMessageBackToUser(message: PROCESSED_MESSAGE) {
 
