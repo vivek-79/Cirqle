@@ -9,7 +9,7 @@ import { isOneWayFollowCheck } from 'src/lib/isOneWayFollow';
 @Injectable()
 export class NotificationService {
 
-  constructor(private readonly prisma: PrismaService , private readonly emiter:EventEmitter2) { }
+  constructor(private readonly prisma: PrismaService, private readonly emiter: EventEmitter2) { }
 
   //get notifications
   async getNotifications(id: number) {
@@ -34,7 +34,7 @@ export class NotificationService {
           isRead: true,
           createdAt: true,
           type: true,
-          receiverId:true,
+          receiverId: true,
           sender: {
             select: {
               avatar: true,
@@ -53,7 +53,7 @@ export class NotificationService {
       const modifiedNotifications = await isOneWayFollowCheck(notifications);
 
       //Caching notifications and sending 
-      
+
       // const serialized = modifiedNotifications.map(n=>JSON.stringify(n))
       // await redis.lpush(`${id}-notifications`,...serialized);
       // await redis.ltrim(`${id}-notifications`,0,49);
@@ -67,12 +67,11 @@ export class NotificationService {
 
   //sending individual nootification
   async sendNotification(notification: NOTIFICATION) {
-    
-    console.log(notification);
+
     try {
-      
+
       // if its a follow notification
-      if(notification.type === "FOLLOW") {
+      if (notification.type === "FOLLOW") {
 
         const modifiedNotification = await isOneWayFollowCheck([notification]);
 
@@ -83,23 +82,31 @@ export class NotificationService {
         return;
       };
 
-      redis.lpush(`${notification.receiverId}-notifications`,JSON.stringify(notification));
-      this.emiter.emit('sendNotification',notification);
-      
+      redis.lpush(`${notification.receiverId}-notifications`, JSON.stringify(notification));
+      this.emiter.emit('sendNotification', notification);
+
     } catch (error) {
       console.error("Error sending notification:", error);
     }
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} notification`;
-  }
+  //marking notifications seen
+  async markRead(notificationIds: string[]) {
+    try {
+      await this.prisma.notification.updateMany({
+        where: {
+          id: {
+            in: notificationIds,
+          }
+        },
+        data: {
+          isRead: true
+        }
+      })
 
-  update(id: number, updateNotificationDto: UpdateNotificationDto) {
-    return `This action updates a #${id} notification`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} notification`;
+      return { ok:true,message:'Notifications updated successfully' }
+    } catch (error) {
+      return { ok: false, message: 'Error while updating notifications' }
+    }
   }
 }

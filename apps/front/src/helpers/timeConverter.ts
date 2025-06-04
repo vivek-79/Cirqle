@@ -1,34 +1,34 @@
-import { formatDistanceToNow } from "date-fns";
+import {
+  differenceInMinutes,
+  differenceInHours,
+  differenceInDays,
+  differenceInWeeks,
+  differenceInMonths,
+  differenceInYears,
+} from "date-fns";
 
- //getting hours
- export const hoursAgo = (time: Date) => {
+export const hoursAgo = (time: Date | string): number => {
+  const now = new Date();
+  const date = new Date(time);
 
-    const formatted = formatDistanceToNow(new Date(time));
-    const cleaned = formatted.replace(/^(about|over|almost)\s/, "");
+  const minutes = differenceInMinutes(now, date);
+  if (minutes < 60) return minutes / 60;
 
-    const [valueStr, unit] = cleaned.split(" ");
-    const value = Number(valueStr);
-    const firstChar = unit[0].toLowerCase();
+  const hours = differenceInHours(now, date);
+  if (hours < 24) return hours;
 
-    let multiplier: number;
+  const days = differenceInDays(now, date);
+  if (days < 7) return days * 24;
 
-    if (firstChar === "m") {
-      multiplier = 1 / 60;
-    } else if (firstChar === "h") {
-      multiplier = 1;
-    } else if (firstChar === "d") {
-      multiplier = 24;
-    } else if (firstChar === "w") {
-      multiplier = 24 * 7;
-    } else if (firstChar === "m") {
-      multiplier = 24 * 30;
-    } else if (firstChar === "y") {
-      multiplier = 24 * 365;
-    } else {
-      multiplier = 0;
-    }
-    return value * multiplier;
-  };
+  const weeks = differenceInWeeks(now, date);
+  if (weeks < 4) return weeks * 7 * 24;
+
+  const months = differenceInMonths(now, date);
+  if (months < 12) return months * 30 * 24;
+
+  const years = differenceInYears(now, date);
+  return years * 365 * 24;
+};
 
 
   export const getTimeForMessage =({date}:{date:Date})=>{

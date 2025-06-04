@@ -10,6 +10,7 @@ import { MessagesService } from "src/messages/messages.service";
 import { OnEvent } from "@nestjs/event-emitter";
 import { PROCESSED_MESSAGE } from "@repo/dto"
 import { NOTIFICATION } from "@repo/dto"
+import { NotificationService } from "src/notification/notification.service";
 
 
 @Injectable()
@@ -21,7 +22,9 @@ import { NOTIFICATION } from "@repo/dto"
 })
 export class ChatGateway implements OnGatewayInit, OnGatewayConnection {
 
-  constructor(private readonly chatService: ChatService,private readonly messageService:MessagesService) { }
+  constructor(private readonly chatService: ChatService,private readonly messageService:MessagesService,
+    private readonly notificationService:NotificationService
+  ) { }
   private readonly logger = new Logger(ChatGateway.name)
 
   @WebSocketServer()
@@ -68,15 +71,11 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection {
 
   @SubscribeMessage("sendMessage")
   async handleMessage(client: any, data: SEND_MESSAGE) {
-
-    console.log("this chatgateway here=>",data.messageId)
     await rpushMessage("message", JSON.stringify(data))
   }
 
   @SubscribeMessage("messageAcknowledge")
   async handleAcknowledge(client: any, data: ACKNOWLEDGE) {
-    this.logger.log(`Acknowledge receiver from:${JSON.stringify(data)}`);
-
     await this.messageService.acknowledgeMessages(data)
   }
 
@@ -181,7 +180,6 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection {
     })))
   }
 
-
   // Message Delivered Acknowledgement
   async messageDeliveredAcknowledgement(messageIds: string[], chatId: string,senderId?: number) {
 
@@ -202,5 +200,18 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection {
         chatId,
         acknowledge:"DELIVERED",
       })
+  }
+
+  //notification read ack from client
+  @SubscribeMessage("sendNotificationAck")
+
+  async markNotificationsSeen (client:Socket , data: string[]){
+    const res = await this.notificationService.markRead(data);
+
+    const socketId = client.id;
+
+    if(socketId){
+      // sending read notify ack to user
+    }
   }
 }

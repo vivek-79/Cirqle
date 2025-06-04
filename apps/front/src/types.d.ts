@@ -80,6 +80,8 @@ export interface ClientToServerEvents {
     messageAcknowledge: (data: SEND_ACKNOWLEDGE)=> void;
     getUndeliveredMessagesCount:(data:{userId:number})=>void;
     getUnseenMessages:(data:{userId:number})=>void;
+
+    sendNotificationAck:(data:string[])=>void;
     // add more if needed
 }
 

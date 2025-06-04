@@ -95,7 +95,6 @@ const ChatBox = ({ chatId, userId, accessToken, data }: ChatProps) => {
 
             //Message from server
             socket.on("message", (data) => {
-                console.log(data)
                 if (!data || !data.messages) return;
 
                 const message = data.messages[0];
